@@ -1,26 +1,111 @@
 @import "tailwindcss";
 
+@theme {
+  --color-golden-batter: #E8D1A7;
+  --color-olive-harvest: #9D9167;
+  --color-toasted-caramel: #84592B;
+  --color-spiced-wine: #743014;
+  --color-cowhide-cocoa: #442D1C;
+
+  /* ฟอนต์ที่ตั้งค่าไว้ใน layout.tsx */
+  --font-oumin: var(--font-oumin);
+  --font-pani: var(--font-pani);
+  --font-ibm-plex: var(--font-ibm-plex);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  background-color: #f7f5f2;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.postage-edge {
+  --mask: radial-gradient(0.5rem at 0.5rem 0.5rem, #0000 98%, #000) -0.5rem -0.5rem;
+  mask: var(--mask) repeat-x, var(--mask) repeat-y,
+    var(--mask) repeat-x 0 100%, var(--mask) repeat-y 100% 0;
+  mask-size: 1rem 1rem;
+  mask-composite: intersect;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* 4. ช่องพิมพ์ข้อความ (ใช้ CSS ปกติแทน @apply เพื่อเลี่ยง Error) */
+.transparent-input {
+  background-color: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  resize: none;
+  padding: 0;
+  box-shadow: none;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.transparent-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ซ่อน Scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* --- Vintage Scrollbar Styling --- */
+::-webkit-scrollbar {
+  display: none !important;
+}
+
+::-webkit-scrollbar-track {
+  background: #E8D1A7;
+  /* Golden Batter */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #442D1C;
+  /* Cowhide Cocoa */
+  border: 2px solid #E8D1A7;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #743014;
+  /* Spiced Wine */
+}
+
+/* --- Paper Dynamic Height --- */
+.paper-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+  height: auto;
+  /* ให้ยาวตามเนื้อหา */
+  padding-bottom: 80px;
+  /* Padding เผื่อไว้สำหรับมือถือ */
+}
+
+/* ช่องพิมพ์แบบ Auto-expand */
+.auto-expand-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  /* ห้ามมี scrollbar ในตัวมันเอง */
+}
+
+.soft-fade-mask {
+  /* ไล่เฉดโปร่งใสที่ขอบบนและล่างของเนื้อหาข้างใน */
+  mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      black 10%,
+      black 90%,
+      transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      black 10%,
+      black 90%,
+      transparent 100%);
 }
