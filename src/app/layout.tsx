@@ -2,19 +2,24 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { IBM_Plex_Sans_Thai, Playpen_Sans_Thai } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/components/Providers";
 
 // 1. ลงฟอนต์ที่คุณ Nair อัปโหลด (ตรวจสอบชื่อไฟล์ให้ตรงเป๊ะนะคะ)
 
 const fontPani = localFont({
-  src: '../public/fonts/GivePANINewYear2026-Regular.ttf',
+  src: '../../public/fonts/GivePANINewYear2026-Regular.ttf',
   variable: '--font-pani',
 })
 
 const fontMuek = localFont({
-  src: '../public/fonts/SOV_MuekMod_Bold.ttf',
+  src: '../../public/fonts/SOV_MuekMod_Bold.ttf',
   variable: '--font-muek',
 })
 
+const fontADELIA = localFont({
+  src: '../../public/fonts/ADELIA.otf',
+  variable: '--font-adelia',
+})
 
 const fontIbmPlex = IBM_Plex_Sans_Thai({
   subsets: ["thai", "latin"],
@@ -35,10 +40,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`
         ${fontPani.variable} 
         ${fontMuek.variable} 
+        ${fontADELIA.variable} 
         ${fontIbmPlex.variable} 
         antialiased
       `}>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Stamp, Palette, RotateCcw } from 'lucide-react';
+import LoginButton from '@/components/LoginButton';
 
 import { FONTS } from '@/styles/fonts';
 import { THEMES as BASE_THEMES } from '@/styles/themes';
@@ -83,6 +84,7 @@ export default function TimeCapsuleFinal() {
 
   return (
     <main className={`h-screen w-full flex items-center justify-center overflow-hidden p-4 transition-colors duration-700 ${currentTheme.pageBg}`} style={{ perspective: '2000px' }}>
+      <LoginButton />
       <AnimatePresence mode="wait">
         {!isSent ? (
           <motion.div
