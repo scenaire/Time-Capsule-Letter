@@ -1,20 +1,57 @@
 @import "tailwindcss";
 
 @theme {
+
+  --color-soft-shell: #ECE6E3;
+
   --color-golden-batter: #E8D1A7;
-  --color-olive-harvest: #9D9167;
-  --color-toasted-caramel: #84592B;
-  --color-spiced-wine: #743014;
   --color-cowhide-cocoa: #442D1C;
+  --color-olive-harvest: #E0D6B1;
+
+  --color-ivory-mist: #F1EBDF;
+  --color-carbon-fiber: #2A2A2A;
+  --color-cloud-milk: #E5EAE3;
+
+  --color-red-wine: #9E182B;
+  --color-oat-milk: #F2E0D2;
+  --color-claret: #76172C;
+
+  --color-swan-wing: #F5FDE9;
+  --color-royal-blue: #112250;
+  --color-sapphire: #3C507D;
+
+  --color-matcha: #ADC26B;
+  --color-juniper: #292F17;
+  --color-pale-jade: #BCB893;
+
+  --color-scarlet-pop: #FF2446;
+  --color-pale-pink: #FFE1E6;
+  --color-spanish-bistre: #767b39;
+
+  --color-tangy-orange: #FD5A01;
+  --color-honey-beige: #EED696;
+  --color-pine-tree: #23330E;
+
+  --color-dreamy-blue: #689EFC;
+  --color-vanilla-milk: #FFF2D0;
+  --color-lemon-glow: #FFE278;
+
+  --color-lemon-tart: #E6D389;
+  --color-eggplant: #5D4459;
+  --color-dark-charcoal: #362F32;
+
+
+
 
   /* ฟอนต์ที่ตั้งค่าไว้ใน layout.tsx */
-  --font-oumin: var(--font-oumin);
+
   --font-pani: var(--font-pani);
   --font-ibm-plex: var(--font-ibm-plex);
+  --font-muek: var(--font-muek);
 }
 
 :root {
-  background-color: #f7f5f2;
+  background-color: var(--color-soft-shell);
 }
 
 .postage-edge {
@@ -22,7 +59,6 @@
   mask: var(--mask) repeat-x, var(--mask) repeat-y,
     var(--mask) repeat-x 0 100%, var(--mask) repeat-y 100% 0;
   mask-size: 1rem 1rem;
-  mask-composite: intersect;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
 }
 
