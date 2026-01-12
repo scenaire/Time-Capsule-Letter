@@ -2,12 +2,22 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { RefreshCw, Stamp, Palette, RotateCcw } from 'lucide-react';
 import LoginButton from '@/components/LoginButton';
 
 import { FONTS } from '@/styles/fonts';
 import { THEMES as BASE_THEMES } from '@/styles/themes';
 import { EnvelopeBack, EnvelopeFront, EnvelopeFlap, EnvelopeSecond, EnvelopeFlapClose } from '@/components/EnvelopeSVGs';
+
+/* --- 🕯️ CONFIG: รายการ Wax Seals --- */
+// Nair สามารถเพิ่มรูป Seal อื่นๆ ลงใน array นี้ได้เลยค่ะ
+const SEALS = [
+  { id: 'leaf', src: '/images/seals/seal-leaf.png', name: 'Autumn Leaf' }, // 👈 เอารูปที่อัปโหลดไปวาง path นี้นะคะ
+  // { id: 'rose', src: '/images/seals/seal-rose.png', name: 'Rose' },
+  // { id: 'heart', src: '/images/seals/seal-heart.png', name: 'Heart' },
+];
 
 const THEMES = BASE_THEMES.map(t => {
   let env = '#4B1D10';
@@ -26,12 +36,19 @@ export default function TimeCapsuleFinal() {
   const [postcard, setPostcard] = useState({ sender: '', message: '', fontIdx: 0, themeIdx: 0 });
   const [isSent, setIsSent] = useState(false);
   const [isFolding, setIsFolding] = useState(false);
-  const [foldStep, setFoldStep] = useState(0);
+  const [foldStep, setFoldStep] = useState(0); // 0:Open, 1:Sliding, 2:Closed (Ready to Seal)
+  const [readyToSeal, setReadyToSeal] = useState(false);
+
+  /* 🔴 New State: สำหรับเก็บ Seal ที่เลือก */
+  const [selectedSeal, setSelectedSeal] = useState<string | null>(null);
 
   const [isAtTop, setIsAtTop] = useState(true);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const { status } = useSession();
+  const router = useRouter();
 
   const checkScroll = () => {
     if (scrollRef.current) {
@@ -40,6 +57,12 @@ export default function TimeCapsuleFinal() {
       setIsAtBottom(scrollTop + clientHeight >= scrollHeight - 5);
     }
   };
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/");
+    }
+  }, [status, router]);
 
   useEffect(() => {
     if (textareaRef.current && scrollRef.current) {
@@ -52,6 +75,8 @@ export default function TimeCapsuleFinal() {
     }
   }, [postcard.message]);
 
+  if (status === "loading") return null;
+
   const currentTheme = THEMES[postcard.themeIdx];
   const currentFont = FONTS[postcard.fontIdx];
 
@@ -62,24 +87,41 @@ export default function TimeCapsuleFinal() {
   const startFoldingRitual = () => {
     setIsFolding(true);
     setFoldStep(0);
+    setSelectedSeal(null); // Reset Seal
+    setReadyToSeal(false);
   };
 
   const cancelFolding = () => {
     setIsFolding(false);
     setFoldStep(0);
+    setSelectedSeal(null);
+    setReadyToSeal(false);
   };
 
-  const handleSeal = () => {
-    // ⏳ ปรับเวลาให้ช้าลงเพื่อความ Smooth (Total ~3.5s)
-    setFoldStep(1); // 1. Slide Letter Down (2.0s)
+  /* 🔴 Update: แค่ปิดซองเฉยๆ ยังไม่ส่ง (Waiting for Wax Seal) */
+  const handleCloseEnvelope = () => {
+    setFoldStep(1); // เริ่มเลื่อนจดหมายลง
 
+    // รอเลื่อนเสร็จ (2 วินาที)
     setTimeout(() => {
-      setFoldStep(2); // 2. Close Flap (1.5s)
-    }, 2000); // รอ Slide จบ (2.0s)
+      setFoldStep(2); // สั่งปิดฝา (อนิเมชั่นเริ่มหมุนตรงนี้ ใช้เวลา 1.5 วิ)
 
+      // 🔴 เพิ่ม: รออีก 1.5 วินาที (เท่ากับเวลาหมุนฝา) แล้วค่อยบอกว่าพร้อม Seal
+      setTimeout(() => {
+        setReadyToSeal(true);
+      }, 1500);
+
+    }, 2000);
+  };
+
+  /* 🔴 New Function: เมื่อเลือก Seal แล้วทำการประทับตรา */
+  const handleApplySeal = (sealId: string) => {
+    setSelectedSeal(sealId);
+
+    // รอ Animation ประทับตราเสร็จ (สมมติ 1.5 วิ) แล้วค่อยไปหน้า Success
     setTimeout(() => {
-      setIsSent(true); // 3. Sent
-    }, 3800); // Buffer เวลาเผื่อจบ Animation
+      setIsSent(true);
+    }, 1500);
   };
 
   return (
@@ -99,82 +141,96 @@ export default function TimeCapsuleFinal() {
             {isFolding && (
               <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
 
-                {/* Container: overflow-hidden + rounded เพื่อตัดขอบเนียนๆ */}
                 <div className="relative w-full max-w-lg aspect-[1001/1083] overflow-hidden rounded-b-[40px]">
 
-                  {/* Layer 1: Back (หลังสุด) */}
+                  {/* Layer 1: Back */}
                   <EnvelopeBack color={currentTheme.env} className="absolute inset-0 w-full h-full z-0 pointer-events-none" />
 
-                  {/* Layer 2: Flap (ตอนเปิด) */}
-                  <div className={`absolute inset-0 w-full h-full z-0 pointer-events-none transition-opacity duration-500 ${foldStep >= 2 ? 'opacity-0' : 'opacity-100'}`}>
+                  {/* Layer 2: Flap (Open) */}
+                  <div className={`absolute inset-0 w-full h-full z-0 pointer-events-none transition-opacity duration-0 ${foldStep >= 2 ? 'opacity-0' : 'opacity-100'}`}>
                     <EnvelopeFlap color={currentTheme.env} className="absolute inset-0 w-full h-full" />
                   </div>
 
-                  {/* Layer 3: 💌 ตัวจดหมาย */}
+                  {/* Layer 3: Letter */}
                   <motion.div
                     onClick={foldStep === 0 ? cancelFolding : undefined}
-                    // 🔴 UI Fix: items-start (จัดซ้าย), pointer-events-auto (ให้กดได้)
                     className={`absolute left-[10%] right-[10%] z-10 ${currentTheme.bg} ${currentTheme.text} shadow-sm flex flex-col items-start cursor-pointer hover:brightness-95 pointer-events-auto`}
-
-                    // 🔴 Physics Fix: top 50% (เลื่อนลงให้ลึกกว่าเดิม เพื่อให้พ้นขอบฝาซองด้านบนแน่นอน)
                     initial={{ top: "12%", height: "85%" }}
-                    animate={{
-                      top: foldStep >= 1 ? "50%" : "12%",
-                    }}
-                    // 🔴 Animation Fix: duration 2s (ช้าลง), easeInOut (นุ่มนวล)
+                    animate={{ top: foldStep >= 1 ? "50%" : "12%" }}
                     transition={{ duration: 2.0, ease: [0.42, 0, 0.58, 1] }}
                   >
                     <div className="w-full h-full p-6 md:p-8 flex flex-col overflow-hidden relative pointer-events-none">
                       <div className="w-full h-full flex flex-col gap-4">
-
-                        {/* 🔴 Content: Text Left (ชิดซ้าย) */}
                         <div className="flex-1 w-full overflow-hidden min-h-0 relative text-left">
                           <p className={`whitespace-pre-wrap leading-relaxed ${currentFont.size} opacity-85 break-words`}>
                             {postcard.message || "..."}
                           </p>
                         </div>
-
-                        {/* 🔴 Sender: Text Right (ชิดขวา) */}
                         <div className="mt-auto pt-4 text-right opacity-75 shrink-0 border-t border-current/10 w-full">
                           <p className={`${currentFont.senderText} uppercase tracking-widest text-[10px]`}>Sent with love by</p>
                           <p className={`${currentFont.senderSize} mt-1`}>{postcard.sender}</p>
                         </div>
                       </div>
                     </div>
-
-                    {/* Tooltip */}
-                    {foldStep === 0 && (
-                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md text-white text-[10px] px-3 py-1.5 rounded-full opacity-0 hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
-                        Click to Edit
-                      </div>
-                    )}
                   </motion.div>
 
-                  {/* Layer 4: Second/Liner */}
+                  {/* Layer 4 & 5: Second + Front */}
                   <EnvelopeSecond secondColor={currentTheme.envSecond} className="absolute inset-0 w-full h-full z-20 pointer-events-none" />
-
-                  {/* Layer 5: Front Pocket */}
                   <EnvelopeFront frontColor={currentTheme.envFront} className="absolute inset-0 w-full h-full z-30 pointer-events-none" />
 
                   {/* Layer 6: Flap Close */}
                   <motion.div
-                    className="absolute inset-0 w-full h-full origin-[50%_46%]"
-                    initial={{ rotateX: 180, opacity: 0 }}
+                    className="absolute inset-0 w-full h-full origin-[50%_46.53%]"
+                    initial={{ rotateX: 0, opacity: 0, z: 0 }}
                     animate={{
-                      rotateX: foldStep >= 2 ? 0 : 180,
+                      rotateX: foldStep >= 2 ? -180 : 0,
                       opacity: foldStep >= 2 ? 1 : 0,
-                      zIndex: 40
+                      zIndex: 40,
+                      // 🔴 FIX: เปลี่ยนจาก 1 เป็น -1 (เพราะแกนกลับทิศตอนหมุน)
+                      z: foldStep >= 2 ? -1 : 0
                     }}
-                    // 🔴 Animation Fix: duration 1.5s (พับช้าลง)
-                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                    transition={{
+                      rotateX: { duration: 1.5, ease: "easeInOut" },
+                      opacity: { duration: 0 },
+                      zIndex: { duration: 0 },
+                      z: { duration: 0 }
+                    }}
                     style={{ transformStyle: 'preserve-3d' }}
                   >
-                    <EnvelopeFlapClose color={currentTheme.env} className="absolute inset-0 w-full h-full pointer-events-none" />
+                    <EnvelopeFlap color={currentTheme.env} className="absolute inset-0 w-full h-full pointer-events-none" />
                   </motion.div>
+
+                  {/* 🔴 Layer 7: Final Wax Seal (แยกออกมาอยู่ layer บนสุด) */}
+                  <AnimatePresence>
+                    {selectedSeal && (
+                      <motion.div
+                        key="final-seal-container"
+                        className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center"
+                      >
+                        <motion.img
+                          src={SEALS.find(s => s.id === selectedSeal)?.src}
+                          initial={{ scale: 2, opacity: 0 }} // เริ่มแบบใหญ่ๆ จางๆ
+                          animate={{ scale: 1, opacity: 1 }} // ประทับลงมาขนาดจริง
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 20,
+                            mass: 0.8
+                          }}
+                          className="w-24 h-24 object-contain drop-shadow-2xl"
+                          style={{
+                            // จัดตำแหน่งให้อยู่ตรงกลางสามเหลี่ยมด้านล่างพอดี
+                            // (ปรับค่า marginTop ได้ถ้าอยากให้ขยับขึ้นลง)
+                            marginTop: '80%'
+                          }}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                 </div>
 
-                {/* ปุ่ม Seal */}
+                {/* 🔴 UI Step 1: ปุ่มปิดซอง (แสดงตอนแรก) */}
                 {foldStep === 0 && (
                   <div className="absolute -right-24 md:-right-32 top-1/2 -translate-y-1/2 flex flex-col gap-4">
                     <motion.button
@@ -182,13 +238,14 @@ export default function TimeCapsuleFinal() {
                       animate={{ opacity: 1, x: 0 }}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={handleSeal}
+                      onClick={handleCloseEnvelope}
                       className={`${currentTheme.bg} ${currentTheme.text} p-4 rounded-full shadow-lg flex flex-col items-center gap-2 pointer-events-auto border-2 border-[#E5D0BA]/20`}
                     >
                       <Stamp size={28} />
-                      <span className="text-[12px] font-bold tracking-widest uppercase whitespace-nowrap">Seal It</span>
+                      <span className="text-[12px] font-bold tracking-widest uppercase whitespace-nowrap">Fold It</span>
                     </motion.button>
 
+                    {/* ปุ่ม Undo */}
                     <motion.button
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 0.6 }}
@@ -200,6 +257,33 @@ export default function TimeCapsuleFinal() {
                     </motion.button>
                   </div>
                 )}
+
+                {/* 🔴 UI Step 2: ถาดเลือก Wax Seal (แสดงเมื่อพับซองเสร็จ และยังไม่ได้เลือก) */}
+                {readyToSeal && !selectedSeal && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-4 p-4 bg-white/20 backdrop-blur-xl rounded-2xl border border-white/30 pointer-events-auto shadow-2xl z-[60]"
+                  >
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 text-white font-ibm-plex text-sm uppercase tracking-widest drop-shadow-md whitespace-nowrap">
+                      Select a Seal to Finish
+                    </span>
+
+                    {SEALS.map((seal) => (
+                      <motion.button
+                        key={seal.id}
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleApplySeal(seal.id)}
+                        className="w-16 h-16 rounded-full bg-white/10 hover:bg-white/30 transition-all flex items-center justify-center border border-white/20 shadow-lg relative group"
+                      >
+                        {/* รูป Preview Seal */}
+                        <img src={seal.src} alt={seal.name} className="w-12 h-12 object-contain drop-shadow-md" />
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
+
               </div>
             )}
 

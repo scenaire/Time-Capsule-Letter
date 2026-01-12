@@ -43,3 +43,4 @@ export const EnvelopeFlapClose = ({ color, className }: EnvelopeProps) => (
         />
     </svg>
 );
+

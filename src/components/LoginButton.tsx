@@ -29,7 +29,7 @@ export default function LoginButton() {
                 )}
 
                 <button
-                    onClick={() => signOut()}
+                    onClick={() => signOut({ callbackUrl: "/" })}
                     className="p-2 ml-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
                     title="Sign Out"
                 >
