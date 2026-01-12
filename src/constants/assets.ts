@@ -15,31 +15,60 @@ export const SEALS = [
 
 export const ENVELOPES = [
     {
+        id: 'white',
+        name: 'Warm Ivory',
+        env: '#E9E4DC',
+        envFront: '#F2EEE7',
+        envSecond: '#D8D2C8'
+    },
+    {
+        id: 'black',
+        name: 'Charcoal Black',
+        env: '#1E1E1E',
+        envFront: '#2A2A2A',
+        envSecond: '#141414'
+    },
+    {
         id: 'cocoa',
         name: 'Classic Cocoa',
         env: '#4B1D10',
         envFront: '#62231E',
-        envSecond: '#591e16ff'
+        envSecond: '#53211A'
     },
     {
-        id: 'carbon',
-        name: 'Carbon Fiber',
-        env: '#1A1A1A',
-        envFront: '#2C2C2C',
-        envSecond: '#404040'
+        id: 'pink',
+        name: 'Soft Blush',
+        env: '#D98C9F',
+        envFront: '#E6A1B2',
+        envSecond: '#C97A8C'
+    },
+    {
+        id: 'blue',
+        name: 'Classic Sky',
+        env: '#5E7F9A',
+        envFront: '#6F93AE',
+        envSecond: '#4F6E86'
+    },
+    {
+        id: 'kraft',
+        name: 'Kraft Beige',
+        env: '#C2A57A',
+        envFront: '#D1B58A',
+        envSecond: '#B1956D'
+    },
+    {
+        id: 'sage',
+        name: 'Soft Sage',
+        env: '#A8B8A1',
+        envFront: '#B7C7B0',
+        envSecond: '#97A88F'
     },
     {
         id: 'navy',
-        name: 'Deep Ocean',
-        env: '#1E293B',
-        envFront: '#334155',
-        envSecond: '#94A3B8'
-    },
-    {
-        id: 'white',
-        name: 'Pure White',
-        env: '#F1F5F9',
-        envFront: '#E2E8F0',
-        envSecond: '#CBD5E1'
+        name: 'Classic Navy',
+        env: '#1E2A38',
+        envFront: '#2A394A',
+        envSecond: '#141E28'
     },
 ];
+
