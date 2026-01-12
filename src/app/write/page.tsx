@@ -40,6 +40,7 @@ export default function TimeCapsulePage() {
             {/* 3D Envelope Animation */}
             {state.isFolding && (
               <EnvelopeContainer
+                envelope={derived.currentEnvelope} // ซอง (เอาสี env)
                 theme={derived.currentTheme}
                 font={derived.currentFont}
                 postcard={state.postcard}
@@ -49,6 +50,7 @@ export default function TimeCapsulePage() {
                 onCloseEnvelope={actions.handleCloseEnvelope}
                 onApplySeal={actions.handleApplySeal}
                 onCancel={actions.cancelFolding}
+                onCycleEnvelope={actions.cycleEnvelope}
               />
             )}
 
@@ -68,7 +70,7 @@ export default function TimeCapsulePage() {
 
           </motion.div>
         ) : (
-          <SuccessMessage />
+          <SuccessMessage textColor={derived.currentTheme.text} />
         )}
       </AnimatePresence>
 

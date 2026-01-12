@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FONTS } from '@/styles/fonts';
-import { THEMES as BASE_THEMES } from '@/styles/themes';
+import { THEMES } from '@/styles/themes';
+import { ENVELOPES } from '@/constants/assets';
 
 // Types
 export interface PostcardState {
@@ -10,6 +11,7 @@ export interface PostcardState {
     message: string;
     fontIdx: number;
     themeIdx: number;
+    envelopeIdx: number;
 }
 
 export interface ScrollState {
@@ -22,7 +24,7 @@ export const useLetterLogic = () => {
     const router = useRouter();
 
     // State
-    const [postcard, setPostcard] = useState<PostcardState>({ sender: '', message: '', fontIdx: 0, themeIdx: 0 });
+    const [postcard, setPostcard] = useState<PostcardState>({ sender: '', message: '', fontIdx: 0, themeIdx: 0, envelopeIdx: 0 });
     const [isSent, setIsSent] = useState(false);
     const [isFolding, setIsFolding] = useState(false);
     const [foldStep, setFoldStep] = useState(0);
@@ -35,22 +37,12 @@ export const useLetterLogic = () => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     /* 🔴 FIX 1: เพิ่ม Logic แปลง Theme ให้มีสีซองจดหมาย (env) ครบถ้วน */
-    const MAPPED_THEMES = BASE_THEMES.map(t => {
-        let env = '#4B1D10';
-        let envFront = '#62231E';
-        let envSecond = '#783D2E';
 
-        if (t.name === 'Classic Cocoa') {
-            env = '#4B1D10'; envFront = '#62231E'; envSecond = '#E5D0BA';
-        } else if (t.name === 'Carbon Fiber') {
-            env = '#1A1A1A'; envFront = '#2C2C2C'; envSecond = '#404040';
-        }
-        return { ...t, env, envFront, envSecond };
-    });
 
     // Derived Data (ใช้ตัวที่ Map แล้ว)
-    const currentTheme = MAPPED_THEMES[postcard.themeIdx];
+    const currentTheme = THEMES[postcard.themeIdx];
     const currentFont = FONTS[postcard.fontIdx];
+    const currentEnvelope = ENVELOPES[postcard.envelopeIdx];
 
     // ... (Helpers, Actions, Effects ส่วนที่เหลือเหมือนเดิมเป๊ะ ไม่ต้องแก้) ...
     const checkScroll = () => {
@@ -63,7 +55,7 @@ export const useLetterLogic = () => {
         }
     };
 
-    const cycleProperty = (key: 'fontIdx' | 'themeIdx', listLength: number) => {
+    const cycleProperty = (key: 'fontIdx' | 'themeIdx' | 'envelopeIdx', listLength: number) => {
         setPostcard(prev => ({ ...prev, [key]: (prev[key] + 1) % listLength }));
     };
 
@@ -120,7 +112,8 @@ export const useLetterLogic = () => {
         actions: {
             updatePostcard,
             cycleFont: () => cycleProperty('fontIdx', FONTS.length),
-            cycleTheme: () => cycleProperty('themeIdx', MAPPED_THEMES.length), // แก้เป็น MAPPED_THEMES
+            cycleTheme: () => cycleProperty('themeIdx', THEMES.length),
+            cycleEnvelope: () => cycleProperty('envelopeIdx', ENVELOPES.length),
             startFoldingRitual,
             cancelFolding,
             handleCloseEnvelope,
@@ -128,6 +121,6 @@ export const useLetterLogic = () => {
             handleScroll: checkScroll
         },
         refs: { scrollRef, textareaRef },
-        derived: { currentTheme, currentFont }
+        derived: { currentTheme, currentFont, currentEnvelope }
     };
 };

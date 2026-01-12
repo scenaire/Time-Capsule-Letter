@@ -2,19 +2,20 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Stamp } from 'lucide-react';
-
-import { EnvelopeBack, EnvelopeFront, EnvelopeFlap, EnvelopeSecond } from '@/components/EnvelopeSVGs';
+import { Stamp, Mail } from 'lucide-react';
 import { SEALS } from '@/constants/assets';
+import { EnvelopeBack, EnvelopeFront, EnvelopeFlap, EnvelopeSecond, EnvelopeFlapClose } from '@/components/EnvelopeSVGs'; // 👈 เพิ่ม EnvelopeFlapClose
 import { SealSelector } from '@/components/SealSelector';
 import { ActionButton, UndoButton } from '@/components/ActionButtons';
 
-// กำหนด Type ของ Props ให้ชัดเจน
+// 🔴 FIX: แยก Type ออกเป็น 2 ส่วนให้ชัดเจน
 interface EnvelopeContainerProps {
-    theme: {
+    envelope: { // รับค่าสีซอง
         env: string;
         envSecond: string;
         envFront: string;
+    };
+    theme: { // รับค่าสีกระดาษ
         bg: string;
         text: string;
     };
@@ -32,10 +33,12 @@ interface EnvelopeContainerProps {
     onCloseEnvelope: () => void;
     onApplySeal: (id: string) => void;
     onCancel: () => void;
+    onCycleEnvelope: () => void;
 }
 
 export const EnvelopeContainer = ({
-    theme,
+    envelope, // 👈 รับ envelope มา
+    theme,    // 👈 รับ theme มา
     font,
     postcard,
     foldStep,
@@ -43,24 +46,22 @@ export const EnvelopeContainer = ({
     readyToSeal,
     onCloseEnvelope,
     onApplySeal,
-    onCancel
+    onCancel,
+    onCycleEnvelope
 }: EnvelopeContainerProps) => {
 
     return (
         <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
-
-            {/* Container หลักของซองจดหมาย */}
             <div className="relative w-full max-w-lg aspect-[1001/1083] overflow-hidden rounded-b-[40px]">
 
-                {/* Layer 1: Envelope Back (หลังสุด) */}
-                <EnvelopeBack color={theme.env} className="absolute inset-0 w-full h-full z-0 pointer-events-none" />
+                {/* ใช้ envelope.env สำหรับสีซอง */}
+                <EnvelopeBack color={envelope.env} className="absolute inset-0 w-full h-full z-0 pointer-events-none" />
 
-                {/* Layer 2: Flap Open (จะหายไปเมื่อเริ่มปิด) */}
                 <div className={`absolute inset-0 w-full h-full z-0 pointer-events-none transition-opacity duration-0 ${foldStep >= 2 ? 'opacity-0' : 'opacity-100'}`}>
-                    <EnvelopeFlap color={theme.env} className="absolute inset-0 w-full h-full" />
+                    <EnvelopeFlap color={envelope.env} className="absolute inset-0 w-full h-full" />
                 </div>
 
-                {/* Layer 3: Letter (กระดาษจดหมายที่เลื่อนลง) */}
+                {/* ใช้ theme.bg และ theme.text สำหรับกระดาษจดหมาย */}
                 <motion.div
                     className={`absolute left-[10%] right-[10%] z-10 ${theme.bg} ${theme.text} shadow-sm flex flex-col items-start`}
                     initial={{ top: "12%", height: "85%" }}
@@ -77,11 +78,10 @@ export const EnvelopeContainer = ({
                     </div>
                 </motion.div>
 
-                {/* Layer 4 & 5: Envelope Layers (ซองชั้นหน้า) */}
-                <EnvelopeSecond secondColor={theme.envSecond} className="absolute inset-0 w-full h-full z-20 pointer-events-none" />
-                <EnvelopeFront frontColor={theme.envFront} className="absolute inset-0 w-full h-full z-30 pointer-events-none" />
+                {/* ใช้ envelope.xxx สำหรับเลเยอร์ซองที่เหลือ */}
+                <EnvelopeSecond secondColor={envelope.envSecond} className="absolute inset-0 w-full h-full z-20 pointer-events-none" />
+                <EnvelopeFront frontColor={envelope.envFront} className="absolute inset-0 w-full h-full z-30 pointer-events-none" />
 
-                {/* Layer 6: Flap Close (ฝาที่จะหมุนปิดลงมา) */}
                 <motion.div
                     className="absolute inset-0 w-full h-full origin-[50%_46.53%]"
                     initial={{ rotateX: 0, opacity: 0, z: 0 }}
@@ -89,7 +89,6 @@ export const EnvelopeContainer = ({
                         rotateX: foldStep >= 2 ? -180 : 0,
                         opacity: foldStep >= 2 ? 1 : 0,
                         zIndex: 40,
-                        // fix: ใช้ -1 เพื่อให้ตอนกลับหัว มันเด้งมาอยู่หน้าสุด
                         z: foldStep >= 2 ? -1 : 0
                     }}
                     transition={{
@@ -100,10 +99,9 @@ export const EnvelopeContainer = ({
                     }}
                     style={{ transformStyle: 'preserve-3d' }}
                 >
-                    <EnvelopeFlap color={theme.env} className="absolute inset-0 w-full h-full pointer-events-none" />
+                    <EnvelopeFlap color={envelope.env} className="absolute inset-0 w-full h-full pointer-events-none" />
                 </motion.div>
 
-                {/* Layer 7: Wax Seal Overlay (แยกมาอยู่ layer บนสุดเพื่อแก้เรื่องกลับหัว) */}
                 <AnimatePresence>
                     {selectedSeal && (
                         <motion.div
@@ -116,7 +114,6 @@ export const EnvelopeContainer = ({
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                                 className="w-24 h-24 object-contain drop-shadow-2xl"
-                                // จัดตำแหน่งให้อยู่ตรงกลางสามเหลี่ยมด้านล่างพอดี (ปรับได้ที่นี่)
                                 style={{ marginTop: '80%' }}
                             />
                         </motion.div>
@@ -125,20 +122,28 @@ export const EnvelopeContainer = ({
 
             </div>
 
-            {/* ปุ่มกดพับจดหมาย (แสดงเฉพาะตอนยังไม่พับ) */}
             {foldStep === 0 && (
                 <div className="absolute -right-24 md:-right-32 top-1/2 -translate-y-1/2 flex flex-col gap-4">
+
+                    {/* 4. เพิ่มปุ่มเปลี่ยนซอง (ใช้ ActionButton ตัวเดิมแต่เปลี่ยนไอคอน) */}
+                    <ActionButton
+                        onClick={onCycleEnvelope}
+                        icon={<Mail size={24} />}
+                        label="Envelope"
+                        theme={theme}
+                    />
+
                     <ActionButton
                         onClick={onCloseEnvelope}
                         icon={<Stamp size={28} />}
                         label="Fold It"
                         theme={theme}
                     />
+
                     <UndoButton onClick={onCancel} />
                 </div>
             )}
 
-            {/* ถาดเลือก Seal (แสดงเมื่อพับเสร็จแล้ว) */}
             {readyToSeal && !selectedSeal && (
                 <SealSelector onSelect={onApplySeal} />
             )}
