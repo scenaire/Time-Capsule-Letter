@@ -5,78 +5,110 @@ import React, { useEffect } from 'react';
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Twitch, Mail } from "lucide-react";
-
-// ดึง Font มาใช้ (สมมติว่าเรียกผ่าน class font-cursive และ font-ibm-plex ได้ตามปกติ)
+import { Twitch } from "lucide-react";
 
 export default function LandingPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
 
-    // ถ้า Login อยู่แล้ว ให้ดีดไปหน้า /write ทันที
+    // Redirect ถ้า Login แล้ว
     useEffect(() => {
         if (status === "authenticated") {
             router.push("/write");
         }
     }, [status, router]);
 
-    // ถ้ากำลังโหลดสถานะ ให้แสดงหน้าจอว่างๆ ไปก่อน
+    // Loading State: มินิมอลด้วยการกระพริบเบาๆ
     if (status === "loading") {
-        return <div className="h-screen w-full bg-olive-harvest flex items-center justify-center"><div className="animate-pulse text-golden-batter">Loading...</div></div>;
+        return (
+            <div className="h-screen w-full bg-[#fdfbf7] flex items-center justify-center">
+                <div className="font-adelia text-2xl text-[#2d2d2d] animate-pulse opacity-50">
+                    Loading...
+                </div>
+            </div>
+        );
     }
 
-    // ถ้ายังไม่ Login ให้แสดงหน้านี้
     return (
-        // ใช้ธีมสี Classic Cocoa เป็นพื้นฐาน (bg-olive-harvest, text-cowhide-cocoa, text-golden-batter)
-        <main className="h-screen w-full flex flex-col items-center justify-center overflow-hidden p-4 bg-olive-harvest relative">
+        // 1. พื้นหลัง: Warm Paper (#fdfbf7) + Dot Pattern จางๆ
+        <main className="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden p-6 bg-[#fdfbf7] text-[#2d2d2d]">
 
-            {/* Background texture or decorative elements (Optional) */}
-            <div className="absolute inset-0 pointer-events-none opacity-10" style={{ backgroundImage: 'radial-gradient(circle at center, #E5D0BA 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+            {/* CSS Dot Pattern Background */}
+            <div
+                className="absolute inset-0 pointer-events-none opacity-[0.4]"
+                style={{
+                    backgroundImage: 'radial-gradient(#d1ccc0 1.5px, transparent 1.5px)',
+                    backgroundSize: '24px 24px'
+                }}
+            />
 
+            {/* Content Container */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                className="z-10 flex flex-col items-center text-center max-w-2xl mx-auto p-8 md:p-12 rounded-[40px] bg-cowhide-cocoa/5 backdrop-blur-sm border border-cowhide-cocoa/10 shadow-xl"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="relative z-10 flex flex-col items-center text-center max-w-3xl mx-auto"
             >
-                {/* Icon หัวกระดาษ */}
-                <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.3, type: "spring" }}
-                    className="mb-6 p-4 bg-golden-batter/20 rounded-full text-golden-batter"
-                >
-                    <Mail size={48} />
-                </motion.div>
+                {/* 2. หัวข้อใหญ่ (Typography Focus) */}
+                <div className="relative mb-6">
+                    {/* ของตกแต่งเล็กน้อย: เส้นขีดฆ่า หรือวงกลม (ใช้ SVG วาดสด) */}
 
-                {/* Header หลัก */}
-                <h1 className="font-adelia text-4xl md:text-6xl text-golden-batter mb-6 drop-shadow-sm">
-                    Time Capsule
-                </h1 >
 
-                {/* Subtitle */}
-                <p className="font-ibm-plex text-cowhide-cocoa text-lg md:text-xl opacity-80 mb-12 leading-relaxed">
-                    พื้นที่เก็บความทรงจำ... ส่งข้อความถึงตัวคุณในอนาคต <br className="hidden md:block" /> แล้วพบกันใหม่ในปี 2027
+                    <h1 className="font-adelia text-6xl md:text-8xl lg:text-9xl leading-tight text-[#2d2d2d] drop-shadow-sm rotate-[-2deg]">
+                        Time <br className="md:hidden" />
+                        <span className="relative inline-block">
+                            Capsule
+                            {/* เส้นขีดเส้นใต้แบบวาดมือ */}
+                            <svg className="absolute w-full h-4 -bottom-2 left-0 text-[#2d2d2d] pointer-events-none" viewBox="0 0 200 9" fill="none" preserveAspectRatio="none">
+                                <path d="M2.00025 7.00002C55.0315 1.70183 133.029 -1.61129 198.001 3.50002" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                            </svg>
+                        </span>
+                    </h1>
+                </div>
+
+                {/* 3. คำโปรย (Subtitle) - IBM Plex */}
+                <p className="font-ibm-plex text-lg md:text-2xl text-[#2d2d2d]/70 mb-12 max-w-lg leading-relaxed">
+                    เขียนจดหมายถึงตัวคุณในอนาคต... <br />
+                    เก็บความทรงจำวันนี้ ไว้เปิดอ่านในปี <span className="font-bold text-[#2d2d2d] underline decoration-wavy decoration-[#ff4d4d]">2027</span>
                 </p>
 
-                {/* ปุ่ม Twitch Login (CTA ใหญ่ๆ ตรงกลาง) */}
+                {/* 4. The "Stamp/Ticket" Button (ออกแบบใหม่) */}
                 <motion.button
-                    whileHover={{ scale: 1.05, backgroundColor: "#8227FE" }}
-                    whileTap={{ scale: 0.95 }}
-                    // ⚠️ สำคัญ: callbackUrl: "/write" คือพอล็อกอินเสร็จ ให้เด้งไปหน้าเขียนจดหมาย
+                    whileHover={{ scale: 1.02, rotate: 1 }}
+                    whileTap={{ scale: 0.98, translateY: 4 }}
                     onClick={() => signIn("twitch", { callbackUrl: "/write" })}
-                    className="group relative flex items-center gap-3 px-8 py-4 bg-[#9146FF] text-white rounded-full font-bold text-lg md:text-xl shadow-[0_4px_0_0_#5d1cb5] hover:shadow-[0_2px_0_0_#5d1cb5] hover:translate-y-[2px] transition-all"
+                    className="group relative inline-flex items-center justify-center gap-3 px-10 py-5 bg-white text-[#2d2d2d] font-bold text-xl md:text-2xl transition-all"
+                    style={{
+                        // Wobbly Border Magic: สูตรลับขอบบิดเบี้ยว
+                        borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
+                        border: "3px solid #2d2d2d",
+                        // Hard Shadow (เงาแข็ง)
+                        boxShadow: "5px 5px 0px 0px #2d2d2d"
+                    }}
                 >
-                    <Twitch size={28} className="group-hover:rotate-[-10deg] transition-transform" />
-                    <span className="tracking-wider">Login with Twitch</span>
+                    {/* Hover Effect: เปลี่ยนสีพื้นหลังเมื่อเอาเมาส์ชี้ */}
+                    <div className="absolute inset-0 bg-[#ff4d4d] opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"
+                        style={{ borderRadius: "inherit" }}
+                    />
 
-
+                    {/* Icon & Text */}
+                    <Twitch size={32} className="group-hover:text-white transition-colors" />
+                    <span className="font-ibm-plex tracking-wider group-hover:text-white transition-colors">
+                        Login with Twitch
+                    </span>
                 </motion.button>
+
+                <p className="mt-6 text-sm text-[#2d2d2d]/40 font-ibm-plex">
+                    *Requires Twitch account to secure your letter
+                </p>
+
             </motion.div>
 
-            {/* Footer เล็กๆ */}
-            <div className="absolute bottom-4 text-center font-ibm-plex text-cowhide-cocoa/50 text-xs tracking-widest uppercase">
-                Secure • Private • Future-Proof
+            {/* Footer Minimal */}
+            <div className="absolute bottom-6 w-full text-center">
+                <p className="font-ibm-plex text-[#2d2d2d]/30 text-xs tracking-[0.2em] uppercase">
+                    c_nairs • 2026 Event
+                </p>
             </div>
         </main>
     );
