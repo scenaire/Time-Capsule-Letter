@@ -126,10 +126,7 @@ export const EnvelopeContainer = ({
             {foldStep === 0 && (
                 <div className={`
           /* Mobile: ลอยอยู่ด้านล่าง ตรงกลาง, z-index สูงๆ */
-          fixed bottom-10 left-0 w-full flex items-center justify-center gap-4 z-50 pointer-events-auto
-          
-          /* Desktop (md ขึ้นไป): ย้ายกลับไปมุมขวาบนเหมือนเดิม */
-          md:absolute md:bottom-auto md:top-0 md:left-auto md:right-[-80px] md:w-auto md:flex-col md:items-end
+          fixed bottom-[20%] left-0 w-full flex items-center justify-center gap-4 z-50 pointer-events-auto
       `}>
 
                     {/* 4. เพิ่มปุ่มเปลี่ยนซอง (ใช้ ActionButton ตัวเดิมแต่เปลี่ยนไอคอน) */}

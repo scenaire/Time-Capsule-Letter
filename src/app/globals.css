@@ -1,87 +1,117 @@
 @import "tailwindcss";
 
 @theme {
+  /* --- 1. Hand-Drawn Design Tokens --- */
+  --color-paper: #fdfbf7;
+  /* พื้นหลังกระดาษอุ่น */
+  --color-pencil: #2d2d2d;
+  /* สีดินสอดำ */
+  --color-marker-red: #ff4d4d;
+  /* สีแดงปากกาเมจิก */
+  --color-ink-blue: #2d5da1;
+  /* สีน้ำเงิน Ballpoint */
+  --color-paper-muted: #e5e0d8;
+  /* สีกระดาษเก่า/รอยยางลบ */
 
+  --color-black: #000000;
+
+  /* --- 2. Existing Theme Colors (คงค่าเดิมไว้ทั้งหมด) --- */
   --color-soft-shell: #ECE6E3;
-
   --color-rust: #BA3801;
   --color-butter: #FFEC89;
   --color-navy: #4A69B3;
   --color-dutch-white: #FCEEC9;
-
   --color-golden-batter: #E8D1A7;
   --color-cowhide-cocoa: #442D1C;
   --color-olive-harvest: #E0D6B1;
-
   --color-ivory-mist: #F1EBDF;
   --color-carbon-fiber: #2A2A2A;
   --color-cloud-milk: #E5EAE3;
-
   --color-red-wine: #9E182B;
   --color-oat-milk: #F2E0D2;
   --color-claret: #76172C;
-
   --color-swan-wing: #F5FDE9;
   --color-royal-blue: #112250;
   --color-sapphire: #3C507D;
-
   --color-matcha: #ADC26B;
   --color-juniper: #292F17;
   --color-pale-jade: #BCB893;
-
   --color-scarlet-pop: #FF2446;
   --color-pale-pink: #FFE1E6;
   --color-spanish-bistre: #767b39;
-
   --color-tangy-orange: #FD5A01;
   --color-honey-beige: #EED696;
   --color-pine-tree: #23330E;
-
   --color-dreamy-blue: #689EFC;
   --color-vanilla-milk: #FFF2D0;
   --color-lemon-glow: #FFE278;
-
   --color-lemon-tart: #E6D389;
   --color-eggplant: #5D4459;
   --color-dark-charcoal: #362F32;
 
-  /* ฟอนต์ที่ตั้งค่าไว้ใน layout.tsx */
-
+  /* ฟอนต์ */
   --font-pani: var(--font-pani);
   --font-ibm-plex: var(--font-ibm-plex);
   --font-muek: var(--font-muek);
   --font-adelia: var(--font-adelia);
 }
 
+/* --- 3. Hand-Drawn Utility Classes --- */
+@layer components {
+
+  /* ขอบบิดเบี้ยวแบบวาดมือ (Wobbly Borders) */
+  .wobbly-border {
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    border-style: solid;
+  }
+
+  .wobbly-border-md {
+    border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
+    border-style: solid;
+  }
+
+  /* เงาแข็งสไตล์ Minimal (Hard Offset Shadows) */
+  .hard-shadow {
+    box-shadow: 4px 4px 0px 0px var(--color-black);
+    opacity: 0.5;
+  }
+
+  .hard-shadow-lg {
+    box-shadow: 8px 8px 0px 0px var(--color-black);
+    opacity: 0.5;
+  }
+
+  /* ลายจุดสมุดโน้ต (Paper Dot Texture) */
+  .paper-dot-bg {
+    background-image: radial-gradient(var(--color-paper-muted) 1.2px, transparent 1.2px);
+    background-size: 24px 24px;
+  }
+
+  /* เทปใสตกแต่ง (Tape Effect) */
+  .decoration-tape {
+    position: relative;
+  }
+
+  .decoration-tape::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-2deg);
+    width: 60px;
+    height: 20px;
+    background-color: rgba(200, 200, 200, 0.3);
+    backdrop-filter: blur(1px);
+    z-index: 10;
+  }
+}
+
 :root {
-  background-color: var(--color-soft-shell);
+  background-color: var(--color-paper);
+  color: var(--color-pencil);
 }
 
-.postage-edge {
-  --mask: radial-gradient(0.5rem at 0.5rem 0.5rem, #0000 98%, #000) -0.5rem -0.5rem;
-  mask: var(--mask) repeat-x, var(--mask) repeat-y,
-    var(--mask) repeat-x 0 100%, var(--mask) repeat-y 100% 0;
-  mask-size: 1rem 1rem;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
-}
-
-/* 4. ช่องพิมพ์ข้อความ (ใช้ CSS ปกติแทน @apply เพื่อเลี่ยง Error) */
-.transparent-input {
-  background-color: transparent;
-  border: none;
-  outline: none;
-  width: 100%;
-  resize: none;
-  padding: 0;
-  box-shadow: none;
-}
-
-.transparent-input:focus {
-  outline: none;
-  box-shadow: none;
-}
-
-/* ซ่อน Scrollbar */
+/* ซ่อน Scrollbar แต่ยังเลื่อนได้ */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -91,60 +121,19 @@
   scrollbar-width: none !important;
 }
 
-/* --- Vintage Scrollbar Styling --- */
-::-webkit-scrollbar {
-  display: none !important;
-}
-
-::-webkit-scrollbar-track {
-  background: #E8D1A7;
-  /* Golden Batter */
-}
-
-::-webkit-scrollbar-thumb {
-  background: #442D1C;
-  /* Cowhide Cocoa */
-  border: 2px solid #E8D1A7;
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #743014;
-  /* Spiced Wine */
-}
-
-/* --- Paper Dynamic Height --- */
-.paper-container {
-  display: flex;
-  flex-direction: column;
-  min-height: 500px;
-  height: auto;
-  /* ให้ยาวตามเนื้อหา */
-  padding-bottom: 80px;
-  /* Padding เผื่อไว้สำหรับมือถือ */
-}
-
-/* ช่องพิมพ์แบบ Auto-expand */
-.auto-expand-input {
-  background: transparent;
+/* รีเซ็ตช่อง Input ให้โปร่งใส */
+.transparent-input {
+  background-color: transparent;
   border: none;
   outline: none;
   width: 100%;
   resize: none;
-  overflow: hidden;
-  /* ห้ามมี scrollbar ในตัวมันเอง */
 }
 
-.soft-fade-mask {
-  /* ไล่เฉดโปร่งใสที่ขอบบนและล่างของเนื้อหาข้างใน */
-  mask-image: linear-gradient(to bottom,
-      transparent 0%,
-      black 10%,
-      black 90%,
-      transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom,
-      transparent 0%,
-      black 10%,
-      black 90%,
-      transparent 100%);
+/* รอยหยักแสตมป์เดิม (ปรับปรุงให้ใช้ Token ใหม่) */
+.postage-edge {
+  --mask: radial-gradient(0.5rem at 0.5rem 0.5rem, #0000 98%, #000) -0.5rem -0.5rem;
+  mask: var(--mask) repeat-x, var(--mask) repeat-y,
+    var(--mask) repeat-x 0 100%, var(--mask) repeat-y 100% 0;
+  mask-size: 1rem 1rem;
 }

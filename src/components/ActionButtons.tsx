@@ -1,31 +1,54 @@
+// src/components/ActionButtons.tsx
 import React from 'react';
-import { motion } from 'framer-motion';
-import { RotateCcw } from 'lucide-react';
 
-// ปุ่ม Fold It
-export const ActionButton = ({ onClick, icon, label, theme }: any) => (
-    <motion.button
-        initial={{ opacity: 0, x: 50 }}
-        animate={{ opacity: 1, x: 0 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={onClick}
-        className={`${theme.bg} ${theme.text} p-4 rounded-full shadow-lg flex flex-col items-center gap-2 pointer-events-auto border-2 border-[#E5D0BA]/20`}
-    >
-        {icon}
-        <span className="text-[12px] font-bold tracking-widest uppercase whitespace-nowrap">{label}</span>
-    </motion.button>
-);
+interface ActionButtonProps {
+    onClick: () => void;
+    icon: React.ReactNode;
+    label: string;
+    theme: {
+        bg: string;
+        text: string;
+    };
+}
 
-// ปุ่ม Undo
-export const UndoButton = ({ onClick }: { onClick: () => void }) => (
-    <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.6 }}
-        whileHover={{ opacity: 1, scale: 1.1 }}
-        onClick={onClick}
-        className="p-3 bg-white/20 rounded-full backdrop-blur-sm self-center pointer-events-auto text-cowhide-cocoa"
-    >
-        <RotateCcw size={20} />
-    </motion.button>
-);
+export const ActionButton = ({ onClick, icon, label, theme }: ActionButtonProps) => {
+    return (
+        <button
+            onClick={onClick}
+            // 🔴 แก้ไข: ใช้ theme.bg และ theme.text แทน bg-white
+            // ยังคง wobbly-border และ hard-shadow ไว้ แต่เปลี่ยนสี border เป็น #2d2d2d (Pencil)
+            className={`group flex items-center gap-3 px-6 py-3 w-full md:w-auto
+                ${theme.bg} ${theme.text}
+                wobbly-border hard-shadow border-[3px] border-[#000000]
+                hover:scale-105 hover:-rotate-1 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none
+                transition-all duration-200 cursor-pointer`}
+        >
+            {/* ไอคอน */}
+            <span className="transition-transform group-hover:scale-110 group-hover:-rotate-12">
+                {icon}
+            </span>
+            {/* ข้อความ */}
+            <span className="font-ibm-plex font-bold tracking-tight uppercase text-sm">
+                {label}
+            </span>
+        </button>
+    );
+};
+
+export const UndoButton = ({ onClick }: { onClick: () => void }) => {
+    return (
+        <button
+            onClick={onClick}
+            // ปรับปุ่ม Undo ให้เข้าธีมเล็กน้อย แต่ยังคงความ Minimal
+            className="p-3 bg-white/40 backdrop-blur-sm wobbly-border border-2 border-[#000000] hard-shadow 
+                hover:bg-[#2d5da1] hover:text-white hover:border-[#2d5da1]
+                hover:rotate-12 active:scale-95 transition-all cursor-pointer text-[#000000]"
+            title="Cancel"
+        >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+            </svg>
+        </button>
+    );
+};
