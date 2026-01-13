@@ -92,3 +92,16 @@ export const EnvelopeFlapClose = ({ color, className }: EnvelopeProps) => (
         />
     </svg>
 );
+
+export const EnvelopeShadow = () => (
+    <svg width="100%" height="100%" viewBox="0 0 400 300" fill="none" preserveAspectRatio="none">
+        <defs>
+            <radialGradient id="shadowGrad" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(200 150) rotate(90) scale(150 200)">
+                <stop stopColor="black" stopOpacity="0.3" />
+                <stop offset="1" stopColor="black" stopOpacity="0" />
+            </radialGradient>
+        </defs>
+        {/* เงาจะอยู่ภายใต้รูปทรงสามเหลี่ยมปิดซอง */}
+        <path d="M200 150L0 0H400L200 150Z" fill="url(#shadowGrad)" style={{ mixBlendMode: 'multiply' }} />
+    </svg>
+);

@@ -20,7 +20,7 @@ export interface ScrollState {
 }
 
 export const useLetterLogic = () => {
-    const { status } = useSession();
+    const { data: session, status } = useSession();
     const router = useRouter();
 
     // State
@@ -36,8 +36,7 @@ export const useLetterLogic = () => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    /* 🔴 FIX 1: เพิ่ม Logic แปลง Theme ให้มีสีซองจดหมาย (env) ครบถ้วน */
-
+    const hasAutoFilledName = useRef(false);
 
     // Derived Data (ใช้ตัวที่ Map แล้ว)
     const currentTheme = THEMES[postcard.themeIdx];
@@ -95,6 +94,18 @@ export const useLetterLogic = () => {
             router.push("/");
         }
     }, [status, router]);
+
+    useEffect(() => {
+        // ใส่ ?. เพื่อเช็คความปลอดภัย
+        if (session?.user?.name && !hasAutoFilledName.current) {
+            setPostcard(prev => ({
+                ...prev,
+                // 🔴 FIX: เติมเครื่องหมาย ? หลัง session และ user
+                sender: prev.sender || session?.user?.name || ''
+            }));
+            hasAutoFilledName.current = true;
+        }
+    }, [session]);
 
     useEffect(() => {
         if (textareaRef.current && scrollRef.current) {

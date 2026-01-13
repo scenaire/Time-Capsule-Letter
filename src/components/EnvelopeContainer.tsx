@@ -2,11 +2,12 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Stamp, Mail } from 'lucide-react';
+import { Stamp, Mail, Send } from 'lucide-react';
 import { SEALS } from '@/constants/assets';
 import { EnvelopeBack, EnvelopeFront, EnvelopeFlap, EnvelopeSecond, EnvelopeFlapClose } from '@/components/EnvelopeSVGs'; // 👈 เพิ่ม EnvelopeFlapClose
 import { SealSelector } from '@/components/SealSelector';
 import { ActionButton, UndoButton } from '@/components/ActionButtons';
+import { EnvelopeShadow } from '@/components/EnvelopeSVGs';
 
 // 🔴 FIX: แยก Type ออกเป็น 2 ส่วนให้ชัดเจน
 interface EnvelopeContainerProps {
@@ -51,7 +52,7 @@ export const EnvelopeContainer = ({
 }: EnvelopeContainerProps) => {
 
     return (
-        <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+        <div className="relative w-full flex flex-col items-center justify-center">
             <div className="relative w-full max-w-lg aspect-[1001/1083] overflow-hidden rounded-b-[40px]">
 
                 {/* ใช้ envelope.env สำหรับสีซอง */}
@@ -123,7 +124,13 @@ export const EnvelopeContainer = ({
             </div>
 
             {foldStep === 0 && (
-                <div className="absolute -right-24 md:-right-32 top-1/2 -translate-y-1/2 flex flex-col gap-4">
+                <div className={`
+          /* Mobile: ลอยอยู่ด้านล่าง ตรงกลาง, z-index สูงๆ */
+          fixed bottom-10 left-0 w-full flex items-center justify-center gap-4 z-50 pointer-events-auto
+          
+          /* Desktop (md ขึ้นไป): ย้ายกลับไปมุมขวาบนเหมือนเดิม */
+          md:absolute md:bottom-auto md:top-0 md:left-auto md:right-[-80px] md:w-auto md:flex-col md:items-end
+      `}>
 
                     {/* 4. เพิ่มปุ่มเปลี่ยนซอง (ใช้ ActionButton ตัวเดิมแต่เปลี่ยนไอคอน) */}
                     <ActionButton
@@ -135,7 +142,7 @@ export const EnvelopeContainer = ({
 
                     <ActionButton
                         onClick={onCloseEnvelope}
-                        icon={<Stamp size={28} />}
+                        icon={<Send size={28} />}
                         label="Fold It"
                         theme={theme}
                     />
@@ -147,7 +154,6 @@ export const EnvelopeContainer = ({
             {readyToSeal && !selectedSeal && (
                 <SealSelector onSelect={onApplySeal} />
             )}
-
         </div>
     );
 };

@@ -2,15 +2,15 @@ export const FONTS = [
     {
         id: 'font-muek',
         name: 'Muek Term',
-        size: 'text-[24px] md:text-[28px]',
+        size: 'text-[22px] md:text-[26px]',
         senderSize: 'text-[24px]',
-        senderText: 'text-[16px]'
+        senderText: 'text-[20px]'
     },
     {
         id: 'font-pani',
         name: 'PANI New Year',
-        size: 'text-[20px] md:text-[24px]',
+        size: 'text-[18px] md:text-[22px]',
         senderSize: 'text-[20px]',
-        senderText: 'text-[12px]'
+        senderText: 'text-[16px]'
     }
 ];

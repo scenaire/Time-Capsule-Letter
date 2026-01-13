@@ -80,6 +80,7 @@ export default function TimeCapsulePage() {
           isMessageEmpty={!state.postcard.message}
           onCycleFont={actions.cycleFont}
           onCycleTheme={actions.cycleTheme}
+
           onStartFolding={actions.startFoldingRitual}
         />
       )}

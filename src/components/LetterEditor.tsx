@@ -52,9 +52,9 @@ export const LetterEditor = ({
 
             {/* Sender Input Zone */}
             <div className="px-10 md:px-14 pb-10 flex flex-col items-end shrink-0">
-                <span className={`${font.senderText} uppercase tracking-[0.9em] opacity-85 mb-1`}>Sender:</span>
+                <span className={`${font.senderText} opacity-85 mb-1`}>A Letter From…</span>
                 <input
-                    className={`bg-transparent border-b border-current outline-none text-right w-full max-w-[200px] ${font.senderSize} ${theme.placeholder}`}
+                    className={`bg-transparent border-none border-current outline-none text-right w-full max-w-[200px] ${font.senderSize} ${theme.placeholder}`}
                     value={postcard.sender}
                     onChange={(e) => onUpdatePostcard('sender', e.target.value)}
                     disabled={isFolding}

@@ -57,11 +57,11 @@ export const ENVELOPES = [
         envSecond: '#B1956D'
     },
     {
-        id: 'sage',
-        name: 'Soft Sage',
-        env: '#A8B8A1',
-        envFront: '#B7C7B0',
-        envSecond: '#97A88F'
+        id: 'green',
+        name: 'Olive Sage',
+        env: '#5E6F5A',
+        envFront: '#6F8270',
+        envSecond: '#4F5F4C'
     },
     {
         id: 'navy',

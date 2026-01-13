@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, Palette } from 'lucide-react';
+import { Type, Palette } from 'lucide-react';
 
 interface ControlPanelProps {
     theme: any;
@@ -20,7 +20,7 @@ export const ControlPanel = ({
 
         {/* ปุ่มเปลี่ยน Font */}
         <button onClick={onCycleFont} className="p-4 hover:bg-white/50 rounded-full transition-all text-cowhide-cocoa">
-            <Text size={20} />
+            <Type size={20} />
         </button>
 
         {/* ปุ่มเปลี่ยน Theme (พื้นหลัง) */}
