@@ -21,8 +21,9 @@ interface EnvelopeContainerProps {
         text: string;
     };
     font: {
-        size: string;
-        senderSize: string;
+        id: string;
+        envelopeText: string;
+        envelopeSenderText: string;
     };
     postcard: {
         message: string;
@@ -69,14 +70,48 @@ export const EnvelopeContainer = ({
                     animate={{ top: foldStep >= 1 ? "50%" : "12%" }}
                     transition={{ duration: 2.0, ease: [0.42, 0, 0.58, 1] }}
                 >
-                    <div className="w-full h-full p-6 md:p-8 flex flex-col overflow-hidden relative">
-                        <p className={`whitespace-pre-wrap leading-relaxed ${font.size} opacity-85 break-words`}>
+                    {/* ================= HEADER ================= */}
+                    <div
+                        className="px-10 md:px-14 pt-12 pb-2 mb-2 text-center opacity-70 shrink-0"
+                    >
+                        <h2
+                            className={`font-bold text-xs tracking-widest uppercase ${font.envelopeSenderText}`}
+                            style={{ fontFamily: `var(--${font.id})` }}
+                        >
+                            To the One I Haven’t Met Yet.
+                        </h2>
+                    </div>
+
+                    {/* ================= BODY ================= */}
+                    <div className="flex-1 px-10 md:px-14 py-4 overflow-hidden">
+                        <p
+                            className={`whitespace-pre-wrap leading-relaxed ${font.envelopeText} opacity-85 break-words`}
+                        >
                             {postcard.message}
                         </p>
-                        <div className="mt-auto pt-4 text-right opacity-75 shrink-0 border-t border-current/10 w-full">
-                            <p className={`${font.senderSize} mt-1`}>{postcard.sender}</p>
+                    </div>
+
+                    {/* ================= FOOTER ================= */}
+                    <div
+                        className="px-10 md:px-14 pb-12 pt-4 flex flex-col items-end shrink-0 opacity-80"
+                    >
+                        <span
+                            className={`font-bold text-xs tracking-widest uppercase mb-1 ${font.envelopeSenderText}`}
+                            style={{ fontFamily: `var(--${font.id})` }}
+                        >
+                            A Letter From…
+                        </span>
+
+                        <div className="relative w-full max-w-[200px] text-right">
+                            <span
+                                className={`${font.envelopeSenderText} font-bold`}
+                            >
+                                {postcard.sender}
+                            </span>
                         </div>
                     </div>
+
+
                 </motion.div>
 
                 {/* ใช้ envelope.xxx สำหรับเลเยอร์ซองที่เหลือ */}
@@ -135,6 +170,7 @@ export const EnvelopeContainer = ({
                         icon={<Mail size={24} />}
                         label="Envelope"
                         theme={theme}
+                        tooltip="เปลี่ยนซองจดหมาย"
                     />
 
                     <ActionButton
@@ -142,6 +178,7 @@ export const EnvelopeContainer = ({
                         icon={<Send size={28} />}
                         label="Fold It"
                         theme={theme}
+                        tooltip="ส่งจดหมาย"
                     />
 
                     <UndoButton onClick={onCancel} />
