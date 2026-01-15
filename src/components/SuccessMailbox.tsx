@@ -3,38 +3,49 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 
-// 🎨 Theme Config: กำหนดคู่สี Muted (คนอื่น) vs Vivid (ของเรา)
-// Nair สามารถมาแก้ map สีตรงนี้ทีหลังได้เลยครับ
+// 🎨 Theme Config (สี Muted สำหรับ Crowd / สี Vivid สำหรับ Hero)
 const THEME_MAP: Record<string, { muted: string; vivid: string; glow: string }> = {
-    'red': { muted: 'rgba(255, 59, 48, 0.15)', vivid: 'rgba(255, 59, 48, 0.85)', glow: '#FF3B30' },
-    'orange': { muted: 'rgba(255, 149, 0, 0.15)', vivid: 'rgba(255, 149, 0, 0.85)', glow: '#FF9500' },
-    'yellow': { muted: 'rgba(255, 204, 0, 0.15)', vivid: 'rgba(255, 204, 0, 0.85)', glow: '#FFCC00' },
-    'green': { muted: 'rgba(52, 199, 89, 0.15)', vivid: 'rgba(52, 199, 89, 0.85)', glow: '#34C759' },
-    'blue': { muted: 'rgba(0, 122, 255, 0.15)', vivid: 'rgba(0, 122, 255, 0.85)', glow: '#007AFF' },
-    'purple': { muted: 'rgba(175, 82, 222, 0.15)', vivid: 'rgba(175, 82, 222, 0.85)', glow: '#AF52DE' },
-    'pink': { muted: 'rgba(255, 45, 85, 0.15)', vivid: 'rgba(255, 45, 85, 0.85)', glow: '#FF2D55' },
+    'red': { muted: 'rgba(255, 59, 48, 0.25)', vivid: 'rgba(255, 59, 48, 0.85)', glow: 'rgba(255, 59, 48, 0.6)' },
+    'orange': { muted: 'rgba(255, 149, 0, 0.25)', vivid: 'rgba(255, 149, 0, 0.85)', glow: 'rgba(255, 149, 0, 0.6)' },
+    'yellow': { muted: 'rgba(255, 204, 0, 0.25)', vivid: 'rgba(255, 204, 0, 0.85)', glow: 'rgba(255, 204, 0, 0.6)' },
+    'green': { muted: 'rgba(52, 199, 89, 0.25)', vivid: 'rgba(52, 199, 89, 0.85)', glow: 'rgba(52, 199, 89, 0.6)' },
+    'blue': { muted: 'rgba(0, 122, 255, 0.25)', vivid: 'rgba(0, 122, 255, 0.85)', glow: 'rgba(0, 122, 255, 0.6)' },
+    'purple': { muted: 'rgba(175, 82, 222, 0.25)', vivid: 'rgba(175, 82, 222, 0.85)', glow: 'rgba(175, 82, 222, 0.6)' },
+    'pink': { muted: 'rgba(255, 45, 85, 0.25)', vivid: 'rgba(255, 45, 85, 0.85)', glow: 'rgba(255, 45, 85, 0.6)' },
 };
 
 const THEME_KEYS = Object.keys(THEME_MAP);
-
-// 📏 Config
-const BALL_RADIUS = 33;
-const BALL_PADDING = 4;
-const PHYSICS_RADIUS = BALL_RADIUS + BALL_PADDING;
+const BALL_RADIUS = 33; // ขนาดภาพ (66px)
+// 🔴 แก้ไข 1: ลด Gap ให้เหลือ 0 หรือติดลบนิดๆ ให้ซ้อนกันได้หน่อยๆ ดูแน่นๆ
+const PHYSICS_RADIUS = BALL_RADIUS - 1;
 const WALL_THICK = 60;
 
 type Ball = {
     id: number;
-    isUser: boolean; // ✨ แยกแยะว่าเป็นของเราหรือคนอื่น
+    isUser: boolean;
     themeKey: string;
 };
 
-export default function SuccessMailbox() {
+export default function SuccessMailbox({
+    userTheme = 'red',
+    ballCount = 20 // ค่า Default ถ้ายังไม่มี Database
+}: {
+    userTheme?: string;
+    ballCount?: number;
+}) {
     const engineRef = useRef<Matter.Engine | null>(null);
     const [balls, setBalls] = useState<Ball[]>([]);
     const ballDomRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
+        setBalls([]);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (engineRef.current) {
+            Matter.World.clear(engineRef.current.world, false);
+            Matter.Engine.clear(engineRef.current);
+        }
+
         const Engine = Matter.Engine,
             World = Matter.World,
             Bodies = Matter.Bodies,
@@ -44,78 +55,103 @@ export default function SuccessMailbox() {
         const engine = Engine.create();
         engineRef.current = engine;
 
+        // ปรับแรงโน้มถ่วงให้สมจริงขึ้นนิดนึง
+        engine.gravity.y = 2.5;
+
         const width = 400;
         const height = 500;
         const wallOptions = { isStatic: true };
 
-        // สร้างกำแพงโหลแก้ว
         World.add(engine.world, [
             Bodies.rectangle(width / 2, height + 20, width, WALL_THICK, wallOptions),
             Bodies.rectangle(0, height / 2, WALL_THICK, height, wallOptions),
             Bodies.rectangle(width, height / 2, WALL_THICK, height, wallOptions)
         ]);
 
-        // Sync Physics -> DOM
+        // --- 1. Crowd Balls (กองล่าง) ---
+        // ใช้ ballCount ที่รับมา ลบ 1 (เพื่อเว้นที่ให้ Hero Ball ของเรา)
+        // แต่ถ้า database ยังน้อยกว่า 0 ให้กันเหนียวไว้
+        const crowdCount = Math.max(0, ballCount - 1);
+        const initialBalls: Ball[] = [];
+        const crowdBodies: Matter.Body[] = [];
+
+        for (let i = 0; i < crowdCount; i++) {
+            const randomKey = THEME_KEYS[Math.floor(Math.random() * THEME_KEYS.length)];
+            const startX = Math.random() * 300 + 50;
+            const startY = Math.random() * 300;
+
+            const body = Bodies.circle(startX, startY, PHYSICS_RADIUS, {
+                restitution: 0.3, // คนอื่นไม่ต้องเด้งมาก
+                friction: 0.1,    // ฝืดหน่อยจะได้กองสวย
+                density: 0.04,
+            });
+
+            crowdBodies.push(body);
+            initialBalls.push({ id: body.id, isUser: false, themeKey: randomKey });
+        }
+
+        World.add(engine.world, crowdBodies);
+
+        // --- ⚡ 2. Pre-warm (เร่งเวลาให้กองเสร็จ) ---
+        for (let i = 0; i < 200; i++) {
+            Engine.update(engine, 1000 / 60);
+        }
+        setBalls(initialBalls);
+
+        const runner = Runner.create();
+        Runner.run(runner, engine);
+
         Events.on(engine, 'afterUpdate', () => {
             engine.world.bodies.forEach((body) => {
                 if (body.isStatic) return;
                 const ballDiv = ballDomRefs.current.get(body.id);
                 if (ballDiv) {
+                    // Offset ตำแหน่งให้ตรง
                     ballDiv.style.transform = `translate3d(${body.position.x - BALL_RADIUS}px, ${body.position.y - BALL_RADIUS}px, 0) rotate(${body.angle}rad)`;
                 }
             });
         });
 
-        const runner = Runner.create();
-        Runner.run(runner, engine);
+        // --- 3. Hero Ball (ตกลงมาแบบ Lively) ---
+        timeoutRef.current = setTimeout(() => {
+            if (!engineRef.current) return;
 
-        // --- 🎬 Sequence การปล่อยลูกบอล ---
+            const heroColor = THEME_MAP[userTheme] ? userTheme : 'red';
+            // สุ่มตำแหน่งตกนิดหน่อย ไม่ให้ซ้ำซาก
+            const startX = Math.random() * 100 + 150;
 
-        // 1. ปล่อย "Crowd Balls" (ลูกบอลคนอื่น) ลงมาก่อน 20 ลูก
-        const crowdCount = 20;
-        for (let i = 0; i < crowdCount; i++) {
-            setTimeout(() => {
-                // สุ่ม Theme สำหรับคนอื่น
-                const randomKey = THEME_KEYS[Math.floor(Math.random() * THEME_KEYS.length)];
-                spawnBall(randomKey, false); // isUser = false
-            }, i * 50); // ทยอยปล่อยเร็วๆ
-        }
+            // 🔴 แก้ไข 4: Lively Physics
+            const heroBody = Bodies.circle(startX, -150, PHYSICS_RADIUS, {
+                restitution: 0.5, // เด้งดึ๋ง
+                friction: 0.001,  // ลื่นๆ ไม่ติดขัด
+                frictionAir: 0.001, // ต้านอากาศต่ำ
+                density: 0.1,    // หนักกว่าคนอื่น 2 เท่า (จะแหวกกองลงไปได้สวยๆ)
+            });
 
-        // 2. ปล่อย "Hero Ball" (ลูกบอลของเรา) ลงมาทีหลังสุด เพื่อให้เด่นและอยู่ข้างบน
-        setTimeout(() => {
-            // สมมติว่าของเราเป็นสีแดง (Nair เปลี่ยน key ตรงนี้ได้ตามซองที่ user เลือกจริง)
-            spawnBall('red', true); // isUser = true ✨
-        }, 1500); // รอ 1.5 วิ ให้คนอื่นกองกันเสร็จก่อน
+            // ใส่แรงหมุนเริ่มต้น (Torque) ให้ดูมีชีวิตชีวาตอนตก
+            Matter.Body.setAngularVelocity(heroBody, Math.random() * 0.2 - 0.1);
+            Matter.Body.setVelocity(heroBody, { x: 0, y: 15 });
+
+            Matter.World.add(engineRef.current.world, heroBody);
+            setBalls(prev => [...prev, { id: heroBody.id, isUser: true, themeKey: heroColor }]);
+
+        }, 600);
 
         return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
             Runner.stop(runner);
             Engine.clear(engine);
         };
-    }, []);
-
-    const spawnBall = (themeKey: string, isUser: boolean) => {
-        if (!engineRef.current) return;
-
-        // สุ่มตำแหน่ง X ไม่ให้ซ้ำกันเกินไป
-        const startX = Math.random() * 200 + 100;
-        const body = Matter.Bodies.circle(startX, -50, PHYSICS_RADIUS, {
-            restitution: 0.5,
-            friction: 0.005,
-        });
-
-        Matter.World.add(engineRef.current.world, body);
-        setBalls(prev => [...prev, { id: body.id, isUser, themeKey }]);
-    };
+    }, [userTheme, ballCount]);
 
     return (
         <div className="relative w-[400px] h-[500px]">
-            {/* 1. Container ขวดโหล */}
-            <div className="absolute inset-0 z-10 pointer-events-none rounded-[40px] border-[2px] border-[#2d2d2d]/10 overflow-hidden shadow-sm bg-white/5">
-                {/* ลด Noise ลงหน่อยให้ดู Clean ขึ้นสำหรับหน้า Success */}
-                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white/40 to-transparent" />
+            {/* โหลแก้ว */}
+            <div className="absolute inset-0 z-10 pointer-events-none rounded-[40px] border-[2px] border-white/20 overflow-hidden shadow-sm bg-white/5 backdrop-blur-[2px]">
+                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white/30 to-transparent" />
             </div>
 
-            {/* 2. Balls Container */}
+            {/* Balls Container */}
             <div className="absolute inset-0 z-20 overflow-hidden rounded-[40px]">
                 {balls.map(ball => {
                     const theme = THEME_MAP[ball.themeKey] || THEME_MAP['blue'];
@@ -130,30 +166,26 @@ export default function SuccessMailbox() {
                                 ${ball.isUser ? 'z-50' : 'z-0'} 
                             `}
                             style={{
-                                // 🎨 ถ้าเป็น User: ใช้สี Vivid + Glow + Border ชัด
-                                // 🌫️ ถ้าเป็นคนอื่น: ใช้สี Muted + Border จางๆ + ไม่มี Glow
-                                background: ball.isUser ? theme.vivid : theme.muted,
-                                boxShadow: ball.isUser ? `0 0 30px ${theme.glow}` : 'none',
-                                border: ball.isUser
-                                    ? '2px solid rgba(255,255,255,0.9)'
-                                    : '1px solid rgba(255,255,255,0.3)',
-                                backdropFilter: 'blur(4px)',
+                                // 🔴 แก้ไข 3: Apple iOS Frosted Glass Style (ทุกคนใช้สไตล์นี้หมด)
+                                background: ball.isUser ? theme.vivid : theme.muted, // Hero เข้ม / Crowd จาง
+
+                                // Glass Effect หัวใจสำคัญ
+                                backdropFilter: 'blur(12px)',           // เบลอฉากหลังทะลุลูกบอล
+                                WebkitBackdropFilter: 'blur(12px)',
+                                border: '1px solid rgba(255, 255, 255, 0.4)', // ขอบขาวใส
+                                boxShadow: ball.isUser
+                                    ? `0 8px 32px 0 ${theme.glow}, inset 0 0 0 1px rgba(255,255,255,0.2)` // Hero มี Glow
+                                    : '0 4px 10px 0 rgba(0,0,0,0.05)', // Crowd เงาบางๆ
+
+                                // 🔴 แก้ไข 2: เอา Emoji ออก (ใน div นี้ไม่มี content แล้ว)
                             }}
-                        >
-                            {/* ✨ Star/Sparkle สำหรับลูกบอลเราเท่านั้น */}
-                            {ball.isUser && (
-                                <div className="absolute inset-0 flex items-center justify-center animate-pulse">
-                                    <span className="text-white text-2xl drop-shadow-md">✨</span>
-                                </div>
-                            )}
-                        </div>
+                        />
                     );
                 })}
             </div>
 
-            {/* 3. Label (Optional) */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
-                <div className="px-6 py-2 rounded-full bg-[#2d2d2d] text-white font-bold font-ibm-plex text-sm tracking-widest uppercase">
+                <div className="px-6 py-2 rounded-full bg-[#2d2d2d]/90 backdrop-blur-md text-white font-bold font-ibm-plex text-sm tracking-widest uppercase shadow-xl border border-white/10">
                     Your Memory
                 </div>
             </div>

@@ -1,21 +1,37 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useRouter } from "next/navigation";
 import LoginButton from '@/components/LoginButton';
 import { useLetterLogic } from '@/hooks/useLetterLogic';
 import { EnvelopeContainer } from '@/components/EnvelopeContainer';
 import { LetterEditor } from '@/components/LetterEditor';
 import { ControlPanel } from '@/components/ControlPanel';
-import { SuccessMessage } from '@/components/SuccessMessage';
 
 export default function TimeCapsulePage() {
+  const router = useRouter();
   const {
     state,
     actions,
     refs,
     derived
   } = useLetterLogic();
+
+  useEffect(() => {
+    if (state.isSent) {
+      // เพราะ TypeScript ฟ้องว่าไม่มี id ใน Type นี้
+      // สมมติว่า name คือ "Red", "Blue" -> แปลงเป็น "red", "blue"
+      const themeColor = derived.currentTheme.name.toLowerCase();
+
+      // หน่วงเวลาแป๊บนึง (0.5วิ) ให้ความรู้สึกว่าซีลปิดสนิทแล้วค่อยเด้ง
+      const timeout = setTimeout(() => {
+        router.push(`/archived?theme=${themeColor}`);
+      }, 500);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [state.isSent, derived.currentTheme, router]);
 
   if (state.status === "loading") return null;
 
@@ -70,7 +86,13 @@ export default function TimeCapsulePage() {
 
           </motion.div>
         ) : (
-          <SuccessMessage textColor={derived.currentTheme.text} />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className={`text-center font-ibm-plex text-xl opacity-60 ${derived.currentTheme.text}`}
+          >
+            Sealing your memory...
+          </motion.div>
         )}
       </AnimatePresence>
 

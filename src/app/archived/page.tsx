@@ -1,13 +1,17 @@
 "use client";
 
-import React from 'react';
+import React, { Suspense } from 'react'; // ต้องใช้ Suspense เพราะมีการอ่าน SearchParams
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Home, ArrowRight } from "lucide-react";
 import SuccessMailbox from '@/components/SuccessMailbox'; // Import ตัวที่เราเพิ่งสร้าง
 
-export default function ArchivedPage() {
+
+export function ArchivedContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const theme = searchParams.get('theme') || 'red'; // ถ้าไม่มีให้ Default เป็นแดง
 
     return (
         // 1. พื้นหลัง: Warm Paper + Dot Pattern (เหมือน Landing Page เป๊ะๆ)
@@ -49,7 +53,7 @@ export default function ArchivedPage() {
 
                 {/* 3. 🏺 The Hero Section: Success Mailbox */}
                 <div className="relative mb-10 scale-90 md:scale-100">
-                    <SuccessMailbox />
+                    <SuccessMailbox userTheme={theme} ballCount={20} />
                 </div>
 
                 {/* 4. Action Buttons (กลับหน้าแรก) */}
@@ -82,5 +86,13 @@ export default function ArchivedPage() {
 
             </motion.div>
         </main>
+    );
+}
+
+export default function ArchivedPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ArchivedContent />
+        </Suspense>
     );
 }
