@@ -54,6 +54,7 @@
   --font-ibm-plex: var(--font-ibm-plex);
   --font-muek: var(--font-muek);
   --font-adelia: var(--font-adelia);
+  --font-anuphan: var(--font-anuphan);
 }
 
 /* --- 3. Hand-Drawn Utility Classes --- */
@@ -136,4 +137,40 @@
   mask: var(--mask) repeat-x, var(--mask) repeat-y,
     var(--mask) repeat-x 0 100%, var(--mask) repeat-y 100% 0;
   mask-size: 1rem 1rem;
+}
+
+/* --- Hand-drawn Jitter Animation --- */
+@keyframes sketchy-shake {
+  0% {
+    transform: translate(0, 0) rotate(0);
+  }
+
+  20% {
+    transform: translate(-0.5px, 0.5px) rotate(-0.2deg);
+  }
+
+  40% {
+    transform: translate(-0.5px, -0.5px) rotate(0.2deg);
+  }
+
+  60% {
+    transform: translate(0.5px, 0.5px) rotate(0);
+  }
+
+  80% {
+    transform: translate(0.5px, -0.5px) rotate(-0.2deg);
+  }
+
+  100% {
+    transform: translate(0, 0) rotate(0);
+  }
+}
+
+/* สร้าง Class สำหรับเรียกใช้ Animation */
+.animate-sketchy {
+  /* เล่น animation ชื่อ sketchy-shake ใช้เวลา 0.3 วิ วนลูปตลอดไป */
+  animation: sketchy-shake 0.3s infinite linear;
+  /* ช่วยให้ภาพคมชัดขึ้นตอนขยับ */
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
 }

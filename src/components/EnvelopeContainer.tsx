@@ -168,7 +168,7 @@ export const EnvelopeContainer = ({
                     <ActionButton
                         onClick={onCycleEnvelope}
                         icon={<Mail size={24} />}
-                        label="Envelope"
+                        label="เปลี่ยนซอง"
                         theme={theme}
                         tooltip="เปลี่ยนซองจดหมาย"
                     />
@@ -176,7 +176,7 @@ export const EnvelopeContainer = ({
                     <ActionButton
                         onClick={onCloseEnvelope}
                         icon={<Send size={28} />}
-                        label="Fold It"
+                        label="ส่งจดหมาย"
                         theme={theme}
                         tooltip="ส่งจดหมาย"
                     />

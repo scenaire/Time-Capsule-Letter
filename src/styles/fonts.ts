@@ -1,5 +1,14 @@
 export const FONTS = [
     {
+        id: 'font-anuphan',
+        name: 'Anuphan',
+        size: 'text-[14px] md:text-[18px]',
+        senderSize: 'text-[16px]',
+        senderText: 'text-[10px]',
+        envelopeText: 'text-[10px]',
+        envelopeSenderText: 'text-[6px]'
+    },
+    {
         id: 'font-pani',
         name: 'PANI New Year',
         size: 'text-[18px] md:text-[22px]',
@@ -16,5 +25,6 @@ export const FONTS = [
         senderText: 'text-[18px]',
         envelopeText: 'text-[18px]',
         envelopeSenderText: 'text-[14px]'
-    }
+    },
+
 ];
