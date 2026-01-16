@@ -3,22 +3,30 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 
-// 🎨 Theme Config (สี Muted สำหรับ Crowd / สี Vivid สำหรับ Hero)
-const THEME_MAP: Record<string, { muted: string; vivid: string; glow: string }> = {
-    'red': { muted: 'rgba(255, 59, 48, 0.25)', vivid: 'rgba(255, 59, 48, 0.85)', glow: 'rgba(255, 59, 48, 0.6)' },
-    'orange': { muted: 'rgba(255, 149, 0, 0.25)', vivid: 'rgba(255, 149, 0, 0.85)', glow: 'rgba(255, 149, 0, 0.6)' },
-    'yellow': { muted: 'rgba(255, 204, 0, 0.25)', vivid: 'rgba(255, 204, 0, 0.85)', glow: 'rgba(255, 204, 0, 0.6)' },
-    'green': { muted: 'rgba(52, 199, 89, 0.25)', vivid: 'rgba(52, 199, 89, 0.85)', glow: 'rgba(52, 199, 89, 0.6)' },
-    'blue': { muted: 'rgba(0, 122, 255, 0.25)', vivid: 'rgba(0, 122, 255, 0.85)', glow: 'rgba(0, 122, 255, 0.6)' },
-    'purple': { muted: 'rgba(175, 82, 222, 0.25)', vivid: 'rgba(175, 82, 222, 0.85)', glow: 'rgba(175, 82, 222, 0.6)' },
-    'pink': { muted: 'rgba(255, 45, 85, 0.25)', vivid: 'rgba(255, 45, 85, 0.85)', glow: 'rgba(255, 45, 85, 0.6)' },
+// 🎨 Theme Config
+const THEME_MAP: Record<string, { muted: string; vivid: string; }> = {
+    'red': { muted: '#d98c8c', vivid: '#ff4d4d' },
+    'orange': { muted: '#e6b980', vivid: '#ff9f1a' },
+    'yellow': { muted: '#e6d690', vivid: '#ffcc00' },
+    'green': { muted: '#9bc49b', vivid: '#33cc33' },
+    'blue': { muted: '#90b3d9', vivid: '#3399ff' },
+    'purple': { muted: '#bf90d9', vivid: '#be29ec' },
+    'pink': { muted: '#d990b9', vivid: '#ff66b3' },
 };
 
 const THEME_KEYS = Object.keys(THEME_MAP);
-const BALL_RADIUS = 33; // ขนาดภาพ (66px)
-// 🔴 แก้ไข 1: ลด Gap ให้เหลือ 0 หรือติดลบนิดๆ ให้ซ้อนกันได้หน่อยๆ ดูแน่นๆ
+const BALL_RADIUS = 33;
 const PHYSICS_RADIUS = BALL_RADIUS - 1;
 const WALL_THICK = 60;
+
+// 🌀 Doodles Data (รูปทรงต่างๆ)
+const DOODLE_SHAPES = [
+    <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />, // Star
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />, // Heart
+    <path d="M12 20a8 8 0 1 0-8-8 8 8 0 0 0 16 0 8 8 0 0 0-8-8" />, // Spiral
+    <circle cx="12" cy="12" r="8" />, // Circle
+    <path d="M6 6L18 18M6 18L18 6" /> // Cross
+];
 
 type Ball = {
     id: number;
@@ -26,18 +34,72 @@ type Ball = {
     themeKey: string;
 };
 
+type DoodleItem = {
+    id: number;
+    shapeIndex: number;
+    top: string;
+    left: string;
+    scale: number;
+    rotation: number;
+    delay: string;
+    color: string;
+    opacity: number;
+};
+
 export default function SuccessMailbox({
     userTheme = 'red',
-    ballCount = 20 // ค่า Default ถ้ายังไม่มี Database
+    ballCount = 40
 }: {
     userTheme?: string;
     ballCount?: number;
 }) {
     const engineRef = useRef<Matter.Engine | null>(null);
     const [balls, setBalls] = useState<Ball[]>([]);
+    const [doodles, setDoodles] = useState<DoodleItem[]>([]);
     const ballDomRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // ✨ Generate Random Doodles (Logic ใหม่: กระจายรอบนอก)
+    useEffect(() => {
+        const newDoodles: DoodleItem[] = [];
+        const count = 20; // เพิ่มจำนวนให้เยอะขึ้นหน่อยเพราะพื้นที่กว้างขึ้น
+
+        for (let i = 0; i < count; i++) {
+            // 🎲 สุ่มโซนที่จะเกิด: 0=ซ้าย, 1=ขวา, 2=บน
+            const zone = Math.floor(Math.random() * 3);
+            let topStr = '0%';
+            let leftStr = '0%';
+
+            if (zone === 0) {
+                // Zone Left: อยู่นอกโหลทางซ้าย (-50% ถึง -10%)
+                leftStr = (Math.random() * 40 - 50) + '%';
+                topStr = (Math.random() * 120 - 10) + '%'; // สูงต่ำได้เต็มที่
+            } else if (zone === 1) {
+                // Zone Right: อยู่นอกโหลทางขวา (110% ถึง 150%)
+                leftStr = (Math.random() * 40 + 110) + '%';
+                topStr = (Math.random() * 120 - 10) + '%';
+            } else {
+                // Zone Top: อยู่เหนือโหล (-40% ถึง -10%)
+                leftStr = (Math.random() * 160 - 30) + '%'; // ซ้ายขวาได้เต็มที่
+                topStr = (Math.random() * 30 - 40) + '%';
+            }
+
+            newDoodles.push({
+                id: i,
+                shapeIndex: Math.floor(Math.random() * DOODLE_SHAPES.length),
+                top: topStr,
+                left: leftStr,
+                scale: 0.4 + Math.random() * 0.6, // ขนาดคละกัน
+                rotation: Math.random() * 360,
+                delay: Math.random() * 5 + 's',
+                color: ['#FFCC00', '#FF9090', '#90b3d9', '#9bc49b'][Math.floor(Math.random() * 4)],
+                opacity: 0.4 + Math.random() * 0.4
+            });
+        }
+        setDoodles(newDoodles);
+    }, []);
+
+    // --- Matter.js Logic ---
     useEffect(() => {
         setBalls([]);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -54,9 +116,7 @@ export default function SuccessMailbox({
 
         const engine = Engine.create();
         engineRef.current = engine;
-
-        // ปรับแรงโน้มถ่วงให้สมจริงขึ้นนิดนึง
-        engine.gravity.y = 2.5;
+        engine.gravity.y = 1;
 
         const width = 400;
         const height = 500;
@@ -68,9 +128,6 @@ export default function SuccessMailbox({
             Bodies.rectangle(width, height / 2, WALL_THICK, height, wallOptions)
         ]);
 
-        // --- 1. Crowd Balls (กองล่าง) ---
-        // ใช้ ballCount ที่รับมา ลบ 1 (เพื่อเว้นที่ให้ Hero Ball ของเรา)
-        // แต่ถ้า database ยังน้อยกว่า 0 ให้กันเหนียวไว้
         const crowdCount = Math.max(0, ballCount - 1);
         const initialBalls: Ball[] = [];
         const crowdBodies: Matter.Body[] = [];
@@ -79,23 +136,15 @@ export default function SuccessMailbox({
             const randomKey = THEME_KEYS[Math.floor(Math.random() * THEME_KEYS.length)];
             const startX = Math.random() * 300 + 50;
             const startY = Math.random() * 300;
-
             const body = Bodies.circle(startX, startY, PHYSICS_RADIUS, {
-                restitution: 0.3, // คนอื่นไม่ต้องเด้งมาก
-                friction: 0.1,    // ฝืดหน่อยจะได้กองสวย
-                density: 0.04,
+                restitution: 0.3, friction: 0.1, density: 0.04,
             });
-
             crowdBodies.push(body);
             initialBalls.push({ id: body.id, isUser: false, themeKey: randomKey });
         }
-
         World.add(engine.world, crowdBodies);
 
-        // --- ⚡ 2. Pre-warm (เร่งเวลาให้กองเสร็จ) ---
-        for (let i = 0; i < 200; i++) {
-            Engine.update(engine, 1000 / 60);
-        }
+        for (let i = 0; i < 200; i++) { Engine.update(engine, 1000 / 60); }
         setBalls(initialBalls);
 
         const runner = Runner.create();
@@ -106,89 +155,161 @@ export default function SuccessMailbox({
                 if (body.isStatic) return;
                 const ballDiv = ballDomRefs.current.get(body.id);
                 if (ballDiv) {
-                    // Offset ตำแหน่งให้ตรง
                     ballDiv.style.transform = `translate3d(${body.position.x - BALL_RADIUS}px, ${body.position.y - BALL_RADIUS}px, 0) rotate(${body.angle}rad)`;
                 }
             });
         });
 
-        // --- 3. Hero Ball (ตกลงมาแบบ Lively) ---
         timeoutRef.current = setTimeout(() => {
             if (!engineRef.current) return;
-
             const heroColor = THEME_MAP[userTheme] ? userTheme : 'red';
-            // สุ่มตำแหน่งตกนิดหน่อย ไม่ให้ซ้ำซาก
             const startX = Math.random() * 100 + 150;
-
-            // 🔴 แก้ไข 4: Lively Physics
             const heroBody = Bodies.circle(startX, -150, PHYSICS_RADIUS, {
-                restitution: 0.5, // เด้งดึ๋ง
-                friction: 0.001,  // ลื่นๆ ไม่ติดขัด
-                frictionAir: 0.001, // ต้านอากาศต่ำ
-                density: 0.1,    // หนักกว่าคนอื่น 2 เท่า (จะแหวกกองลงไปได้สวยๆ)
+                restitution: 0.7, friction: 0.05, frictionAir: 0.05, density: 0.1,
             });
-
-            // ใส่แรงหมุนเริ่มต้น (Torque) ให้ดูมีชีวิตชีวาตอนตก
             Matter.Body.setAngularVelocity(heroBody, Math.random() * 0.2 - 0.1);
             Matter.Body.setVelocity(heroBody, { x: 0, y: 15 });
-
             Matter.World.add(engineRef.current.world, heroBody);
             setBalls(prev => [...prev, { id: heroBody.id, isUser: true, themeKey: heroColor }]);
-
         }, 600);
 
         return () => {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             Runner.stop(runner);
-            Engine.clear(engine);
+            if (engineRef.current) {
+                Matter.World.clear(engineRef.current.world, false);
+                Matter.Engine.clear(engineRef.current);
+            }
         };
     }, [userTheme, ballCount]);
 
     return (
         <div className="relative w-[400px] h-[500px]">
-            {/* โหลแก้ว */}
-            <div className="absolute inset-0 z-10 pointer-events-none rounded-[40px] border-[2px] border-white/20 overflow-hidden shadow-sm bg-white/5 backdrop-blur-[2px]">
-                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white/30 to-transparent" />
+
+            {/* ✨ 1. Atmosphere Doodles */}
+            {/* ไม่ใช้ z-index: -1 แต่ใช้ pointer-events-none เพื่อให้มันลอยอยู่รอบๆ โดยไม่บังการคลิก */}
+            <div className="absolute inset-0 pointer-events-none">
+                {doodles.map((doodle) => (
+                    <div
+                        key={doodle.id}
+                        className="absolute animate-float-slow"
+                        style={{
+                            top: doodle.top,
+                            left: doodle.left,
+                            transform: `scale(${doodle.scale}) rotate(${doodle.rotation}deg)`,
+                            opacity: doodle.opacity,
+                            animationDelay: doodle.delay,
+                            // ใช้ width/height ใหญ่หน่อยเพื่อให้ svg ไม่ตกขอบ
+                            width: '20px',
+                            height: '20px'
+                        }}
+                    >
+                        <svg
+                            width="100%" height="100%" viewBox="0 0 24 24"
+                            fill="none"
+                            stroke={doodle.color}
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            {DOODLE_SHAPES[doodle.shapeIndex]}
+                        </svg>
+                    </div>
+                ))}
+            </div>
+
+            {/* 🏺 The Sketchbook Jar */}
+            <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden"
+                style={{
+                    borderRadius: '255px 15px 225px 15px / 15px 225px 15px 255px',
+                    border: '3px solid #4a4a4a',
+                    backgroundColor: '#fffdf5',
+                    backgroundImage: 'radial-gradient(#d1ccc0 1px, transparent 1px)',
+                    backgroundSize: '20px 20px',
+                    boxShadow: '8px 8px 0px rgba(0,0,0,0.1)'
+                }}
+            >
+                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#4a4a4a]/10 to-transparent pointer-events-none" />
             </div>
 
             {/* Balls Container */}
-            <div className="absolute inset-0 z-20 overflow-hidden rounded-[40px]">
+            <div className="absolute inset-0 z-20 overflow-hidden"
+                style={{ borderRadius: '255px 15px 225px 15px / 15px 225px 15px 255px' }}>
                 {balls.map(ball => {
                     const theme = THEME_MAP[ball.themeKey] || THEME_MAP['blue'];
+                    const fillColor = ball.isUser ? theme.vivid : theme.muted;
 
                     return (
                         <div
                             key={ball.id}
                             ref={el => { if (el) ballDomRefs.current.set(ball.id, el); }}
                             className={`
-                                absolute top-0 left-0 w-[66px] h-[66px] rounded-full 
-                                transition-all duration-500
-                                ${ball.isUser ? 'z-50' : 'z-0'} 
+                                absolute top-0 left-0 w-[66px] h-[66px] rounded-full
+                                flex items-center justify-center
+                                ${ball.isUser ? 'z-50' : 'z-0'}
                             `}
                             style={{
-                                // 🔴 แก้ไข 3: Apple iOS Frosted Glass Style (ทุกคนใช้สไตล์นี้หมด)
-                                background: ball.isUser ? theme.vivid : theme.muted, // Hero เข้ม / Crowd จาง
-
-                                // Glass Effect หัวใจสำคัญ
-                                backdropFilter: 'blur(12px)',           // เบลอฉากหลังทะลุลูกบอล
-                                WebkitBackdropFilter: 'blur(12px)',
-                                border: '1px solid rgba(255, 255, 255, 0.4)', // ขอบขาวใส
-                                boxShadow: ball.isUser
-                                    ? `0 8px 32px 0 ${theme.glow}, inset 0 0 0 1px rgba(255,255,255,0.2)` // Hero มี Glow
-                                    : '0 4px 10px 0 rgba(0,0,0,0.05)', // Crowd เงาบางๆ
-
-                                // 🔴 แก้ไข 2: เอา Emoji ออก (ใน div นี้ไม่มี content แล้ว)
+                                opacity: ball.isUser ? 1 : 0.6,
+                                filter: ball.isUser ? 'none' : 'blur(1px)',
+                                transition: 'opacity 0.5s, filter 0.5s'
                             }}
-                        />
+                        >
+                            <div
+                                className={`w-[85%] h-[85%] rounded-full ${ball.isUser ? 'animate-scribble' : ''}`}
+                                style={{
+                                    backgroundImage: `repeating-linear-gradient(45deg, ${fillColor}, ${fillColor} 2px, transparent 2px, transparent 6px)`,
+                                    border: ball.isUser ? 'none' : '1.5px solid rgba(0,0,0,0.2)',
+                                    borderRadius: '50% 45% 55% 40% / 40% 60% 50% 55%',
+                                }}
+                            />
+                            {ball.isUser && (
+                                <div className="absolute inset-0 rounded-full border-[3px] border-[#2d2d2d] pointer-events-none"
+                                    style={{ transform: 'rotate(-3deg) scale(1.05)', borderRadius: '55% 40% 50% 60% / 50% 60% 40% 55%' }}
+                                />
+                            )}
+                        </div>
                     );
                 })}
             </div>
 
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
-                <div className="px-6 py-2 rounded-full bg-[#2d2d2d]/90 backdrop-blur-md text-white font-bold font-ibm-plex text-sm tracking-widest uppercase shadow-xl border border-white/10">
-                    Your Memory
+            {/* ✨ 2. Frosted Glass Washi Tape */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[60]">
+                <div className="relative group cursor-default">
+                    <div
+                        className="px-8 py-3 text-[#2d2d2d] font-ibm-plex text-sm font-bold tracking-widest uppercase relative overflow-hidden"
+                        style={{
+                            borderRadius: '2px 4px 3px 5px',
+                            transform: 'rotate(-2deg)',
+                            backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                            backdropFilter: 'blur(6px)',
+                            WebkitBackdropFilter: 'blur(6px)',
+                            border: '1px solid rgba(255, 255, 255, 0.4)',
+                            boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                        }}
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/40 via-transparent to-transparent pointer-events-none" />
+                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-5 bg-white/40 rotate-90 blur-[1px] rounded-sm border border-white/20" />
+                        <span className="relative z-10 drop-shadow-sm">Memory no. {balls.length}</span>
+                    </div>
                 </div>
             </div>
+
+            {/* Animations */}
+            <style jsx global>{`
+                @keyframes scribble {
+                    0% { transform: rotate(0deg) scale(1); border-radius: 50% 45% 55% 40% / 40% 60% 50% 55%; background-position: 0% 0%; }
+                    33% { transform: rotate(2deg) scale(0.98); border-radius: 45% 55% 40% 60% / 55% 40% 60% 50%; background-position: 2px 2px; }
+                    66% { transform: rotate(-1deg) scale(1.02); border-radius: 60% 40% 50% 45% / 45% 55% 40% 60%; background-position: -1px -1px; }
+                    100% { transform: rotate(0deg) scale(1); border-radius: 50% 45% 55% 40% / 40% 60% 50% 55%; background-position: 0% 0%; }
+                }
+                .animate-scribble { animation: scribble 0.4s steps(1) infinite; }
+                
+                @keyframes float {
+                    0%, 100% { transform: translateY(0px) rotate(0deg); }
+                    50% { transform: translateY(-15px) rotate(5deg); }
+                }
+                .animate-float-slow { animation: float 6s ease-in-out infinite; }
+            `}</style>
         </div>
     );
 }
