@@ -2,36 +2,24 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
+import { THEMES } from '@/styles/themes'; // หรือ path ที่คุณเก็บ themes.ts ไว้
 
-// 🎨 Theme Config
-const THEME_MAP: Record<string, { muted: string; vivid: string; }> = {
-    'red': { muted: '#d98c8c', vivid: '#ff4d4d' },
-    'orange': { muted: '#e6b980', vivid: '#ff9f1a' },
-    'yellow': { muted: '#e6d690', vivid: '#ffcc00' },
-    'green': { muted: '#9bc49b', vivid: '#33cc33' },
-    'blue': { muted: '#90b3d9', vivid: '#3399ff' },
-    'purple': { muted: '#bf90d9', vivid: '#be29ec' },
-    'pink': { muted: '#d990b9', vivid: '#ff66b3' },
-};
-
-const THEME_KEYS = Object.keys(THEME_MAP);
 const BALL_RADIUS = 33;
 const PHYSICS_RADIUS = BALL_RADIUS - 1;
 const WALL_THICK = 60;
 
-// 🌀 Doodles Data (รูปทรงต่างๆ)
 const DOODLE_SHAPES = [
-    <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />, // Star
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />, // Heart
-    <path d="M12 20a8 8 0 1 0-8-8 8 8 0 0 0 16 0 8 8 0 0 0-8-8" />, // Spiral
-    <circle cx="12" cy="12" r="8" />, // Circle
-    <path d="M6 6L18 18M6 18L18 6" /> // Cross
+    <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />,
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />,
+    <path d="M12 20a8 8 0 1 0-8-8 8 8 0 0 0 16 0 8 8 0 0 0-8-8" />,
+    <circle cx="12" cy="12" r="8" />,
+    <path d="M6 6L18 18M6 18L18 6" />
 ];
 
 type Ball = {
     id: number;
     isUser: boolean;
-    themeKey: string;
+    themeName: string;
 };
 
 type DoodleItem = {
@@ -47,7 +35,7 @@ type DoodleItem = {
 };
 
 export default function SuccessMailbox({
-    userTheme = 'red',
+    userTheme = 'Carbon Fiber',
     ballCount = 40
 }: {
     userTheme?: string;
@@ -60,28 +48,24 @@ export default function SuccessMailbox({
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // ✨ Generate Random Doodles (Logic ใหม่: กระจายรอบนอก)
+    // ✨ Generate Random Doodles
     useEffect(() => {
         const newDoodles: DoodleItem[] = [];
-        const count = 20; // เพิ่มจำนวนให้เยอะขึ้นหน่อยเพราะพื้นที่กว้างขึ้น
+        const count = 20;
 
         for (let i = 0; i < count; i++) {
-            // 🎲 สุ่มโซนที่จะเกิด: 0=ซ้าย, 1=ขวา, 2=บน
             const zone = Math.floor(Math.random() * 3);
             let topStr = '0%';
             let leftStr = '0%';
 
             if (zone === 0) {
-                // Zone Left: อยู่นอกโหลทางซ้าย (-50% ถึง -10%)
                 leftStr = (Math.random() * 40 - 50) + '%';
-                topStr = (Math.random() * 120 - 10) + '%'; // สูงต่ำได้เต็มที่
+                topStr = (Math.random() * 120 - 10) + '%';
             } else if (zone === 1) {
-                // Zone Right: อยู่นอกโหลทางขวา (110% ถึง 150%)
                 leftStr = (Math.random() * 40 + 110) + '%';
                 topStr = (Math.random() * 120 - 10) + '%';
             } else {
-                // Zone Top: อยู่เหนือโหล (-40% ถึง -10%)
-                leftStr = (Math.random() * 160 - 30) + '%'; // ซ้ายขวาได้เต็มที่
+                leftStr = (Math.random() * 160 - 30) + '%';
                 topStr = (Math.random() * 30 - 40) + '%';
             }
 
@@ -90,7 +74,7 @@ export default function SuccessMailbox({
                 shapeIndex: Math.floor(Math.random() * DOODLE_SHAPES.length),
                 top: topStr,
                 left: leftStr,
-                scale: 0.4 + Math.random() * 0.6, // ขนาดคละกัน
+                scale: 0.4 + Math.random() * 0.6,
                 rotation: Math.random() * 360,
                 delay: Math.random() * 5 + 's',
                 color: ['#FFCC00', '#FF9090', '#90b3d9', '#9bc49b'][Math.floor(Math.random() * 4)],
@@ -122,35 +106,12 @@ export default function SuccessMailbox({
         const width = 400;
         const height = 500;
         const wallOptions = { isStatic: true };
-
-        // คำนวณความสูงกำแพงพิเศษ ให้สูงครอบคลุมไปถึงจุดเกิดบอลข้างบน
-        // ให้สูงสัก 2000px ไปเลย จะได้ไม่มีทางหลุด
         const wallHeight = 2000;
 
         World.add(engine.world, [
-            // 1. พื้น (Bottom) - เหมือนเดิม
             Bodies.rectangle(width / 2, height + 20, width, WALL_THICK, wallOptions),
-
-            // 2. กำแพงซ้าย (Left) - 🏗️ ขยายความสูง และขยับจุดกึ่งกลางขึ้นไป
-            Bodies.rectangle(
-                0,                          // x
-                height / 2 - (wallHeight / 2) + (height / 2), // y: ขยับ center ขึ้นไปเพื่อให้คลุมพื้นที่ด้านบน
-                WALL_THICK,                 // width
-                wallHeight,                 // height: สูง 2000px
-                wallOptions
-            ),
-
-            // 3. กำแพงขวา (Right) - 🏗️ ทำเหมือนกำแพงซ้าย
-            Bodies.rectangle(
-                width,                      // x
-                height / 2 - (wallHeight / 2) + (height / 2), // y
-                WALL_THICK,                 // width
-                wallHeight,                 // height
-                wallOptions
-            ),
-
-            // 4. เพดาน (Ceiling) - 🔒 ปิดฝากล่องด้านบนสุดกันบอลกระเด็นหลุด
-            // วางไว้ที่ y = -1000 (สูงมากพอที่บอลจะไม่ติดตอนเกิด แต่ต่ำพอที่จะกันบอลหลุดโลก)
+            Bodies.rectangle(0, height / 2 - (wallHeight / 2) + (height / 2), WALL_THICK, wallHeight, wallOptions),
+            Bodies.rectangle(width, height / 2 - (wallHeight / 2) + (height / 2), WALL_THICK, wallHeight, wallOptions),
             Bodies.rectangle(width / 2, -1000, width, WALL_THICK, wallOptions)
         ]);
 
@@ -159,14 +120,14 @@ export default function SuccessMailbox({
         const crowdBodies: Matter.Body[] = [];
 
         for (let i = 0; i < crowdCount; i++) {
-            const randomKey = THEME_KEYS[Math.floor(Math.random() * THEME_KEYS.length)];
+            const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
             const startX = Math.random() * 300 + 50;
             const startY = Math.random() * 300;
             const body = Bodies.circle(startX, startY, PHYSICS_RADIUS, {
                 restitution: 0.3, friction: 0.1, density: 0.04,
             });
             crowdBodies.push(body);
-            initialBalls.push({ id: body.id, isUser: false, themeKey: randomKey });
+            initialBalls.push({ id: body.id, isUser: false, themeName: randomTheme.name });
         }
         World.add(engine.world, crowdBodies);
 
@@ -199,7 +160,10 @@ export default function SuccessMailbox({
 
         timeoutRef.current = setTimeout(() => {
             if (!engineRef.current) return;
-            const heroColor = THEME_MAP[userTheme] ? userTheme : 'red';
+
+            // ✅ แก้ไข 1: หา Theme แบบ Case-Insensitive (แก้ปัญหา juniper != Juniper)
+            const heroTheme = THEMES.find(t => t.name.toLowerCase() === (userTheme || '').toLowerCase()) || THEMES[0];
+
             const startX = Math.random() * 100 + 150;
             const heroBody = Bodies.circle(startX, -150, PHYSICS_RADIUS, {
                 restitution: 0.7, friction: 0.05, frictionAir: 0.05, density: 0.1,
@@ -207,7 +171,8 @@ export default function SuccessMailbox({
             Matter.Body.setAngularVelocity(heroBody, Math.random() * 0.2 - 0.1);
             Matter.Body.setVelocity(heroBody, { x: 0, y: 15 });
             Matter.World.add(engineRef.current.world, heroBody);
-            setBalls(prev => [...prev, { id: heroBody.id, isUser: true, themeKey: heroColor }]);
+
+            setBalls(prev => [...prev, { id: heroBody.id, isUser: true, themeName: heroTheme.name }]);
         }, 600);
 
         return () => {
@@ -223,8 +188,7 @@ export default function SuccessMailbox({
     return (
         <div ref={containerRef} className="relative w-[400px] h-[500px]">
 
-            {/* ✨ 1. Atmosphere Doodles */}
-            {/* ไม่ใช้ z-index: -1 แต่ใช้ pointer-events-none เพื่อให้มันลอยอยู่รอบๆ โดยไม่บังการคลิก */}
+            {/* Atmosphere Doodles */}
             <div className="absolute inset-0 pointer-events-none">
                 {doodles.map((doodle) => (
                     <div
@@ -236,7 +200,6 @@ export default function SuccessMailbox({
                             transform: `scale(${doodle.scale}) rotate(${doodle.rotation}deg)`,
                             opacity: doodle.opacity,
                             animationDelay: doodle.delay,
-                            // ใช้ width/height ใหญ่หน่อยเพื่อให้ svg ไม่ตกขอบ
                             width: '20px',
                             height: '20px'
                         }}
@@ -255,7 +218,7 @@ export default function SuccessMailbox({
                 ))}
             </div>
 
-            {/* 🏺 The Sketchbook Jar */}
+            {/* The Sketchbook Jar */}
             <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden"
                 style={{
                     borderRadius: '255px 15px 225px 15px / 15px 225px 15px 255px',
@@ -274,85 +237,68 @@ export default function SuccessMailbox({
                 style={{ borderRadius: '255px 15px 225px 15px / 15px 225px 15px 255px' }}>
 
                 {balls.map(ball => {
-                    const theme = THEME_MAP[ball.themeKey] || THEME_MAP['blue'];
-                    const fillColor = ball.isUser ? theme.vivid : theme.muted;
+                    // ✅ แก้ไข 2: หา ThemeObj แบบ Case-Insensitive เช่นกัน
+                    const themeObj = THEMES.find(t => t.name.toLowerCase() === ball.themeName.toLowerCase()) || THEMES[0];
+                    const ballColors = themeObj.ball || { muted: '#ccc', vivid: '#666' };
+                    const fillColor = ball.isUser ? ballColors.vivid : ballColors.muted;
 
                     return (
                         <div
                             key={ball.id}
                             ref={el => { if (el) ballDomRefs.current.set(ball.id, el); }}
                             className={`
-                absolute top-0 left-0 w-[66px] h-[66px] rounded-full
-                flex items-center justify-center
-                ${ball.isUser ? 'z-50' : 'z-0'}
-            `}
+                                absolute top-0 left-0 w-[66px] h-[66px] rounded-full
+                                flex items-center justify-center
+                                ${ball.isUser ? 'z-50' : 'z-0'}
+                            `}
                             style={{
-                                // Hero: ชัดเจน
-                                // Crowd: โปร่งแสงนิดเดียว (0.95) เพื่อให้ดูมีน้ำหนัก ไม่จางหาย
                                 opacity: ball.isUser ? 1 : 0.8,
                                 transition: 'all 0.5s ease-out'
                             }}
                         >
-                            {/* =========================================
-               🔮 CROWD BALL (True Glass Style - แก้วใสจริง) 
-               ========================================= */}
+                            {/* CROWD BALL */}
                             {!ball.isUser && (
                                 <>
-                                    {/* Layer 1: The Tint (สีระเรื่อๆ ด้านใน) - แก้ไข: จางลงมาก + เบลอ */}
                                     <div
                                         className="absolute inset-0 rounded-full"
                                         style={{
                                             backgroundImage: `repeating-linear-gradient(45deg, ${fillColor}, ${fillColor} 2px, transparent 2px, transparent 6px)`,
                                             transform: 'scale(0.75)',
-                                            filter: 'blur(2px)',
+                                            filter: 'blur(1px)',
                                         }}
                                     />
-
-                                    {/* Layer 2: The Glass Shell (เปลือกแก้วใส) */}
                                     <div
                                         className="absolute inset-0 rounded-full"
                                         style={{
-                                            // ขอบแก้ว: ขาวบางๆ
                                             border: '1px solid rgba(255, 255, 255, 0.6)',
-
-                                            // ความลึก (Depth):
-                                            // - inset ขาว: ขอบแก้วด้านใน
-                                            // - inset สีตามธีม: เรืองแสงที่ขอบล่างนิดๆ
                                             boxShadow: `
-                                inset 0 0 15px rgba(255,255,255,0.5),
-                                inset 2px -4px 6px ${theme.muted}66, 
-                                0 8px 15px rgba(0,0,0,0.05)
-                            `,
-
-                                            // ❌ NO BLUR: ใสปิ๊ง
+                                                inset 0 0 15px rgba(255,255,255,0.5),
+                                                inset 2px -4px 6px ${ballColors.muted}66, 
+                                                0 8px 15px rgba(0,0,0,0.05)
+                                            `,
                                             backdropFilter: 'none',
                                         }}
                                     />
                                 </>
                             )}
-                            {/* =========================================
-               🌟 HERO BALL (Glowing Crystal Style)
-               ========================================= */}
+
+                            {/* HERO BALL */}
                             {ball.isUser && (
                                 <>
-                                    {/* 1. The Magic Core (แกนพลังงานด้านใน) - เต้นตุบๆ */}
                                     <div
                                         className="w-[85%] h-[85%] rounded-full animate-scribble"
                                         style={{
                                             backgroundImage: `repeating-linear-gradient(45deg, ${fillColor}, ${fillColor} 2px, transparent 2px, transparent 6px)`,
-                                            border: 'none', // ไม่มีขอบที่เนื้อสี
+                                            border: 'none',
                                             borderRadius: '50% 45% 55% 40% / 40% 60% 50% 55%',
                                         }}
                                     />
-
-                                    {/* 2. The Crystal Shell (เปลือกแก้ววิเศษ) */}
                                     <div
                                         className="absolute inset-0 rounded-full border-[3px] pointer-events-none animate-wiggle-slow"
                                         style={{
                                             transform: 'rotate(-3deg) scale(1.05)',
                                             borderRadius: '55% 40% 50% 60% / 50% 60% 40% 55%',
                                             borderColor: '#2d2d2d',
-                                            // เพิ่มเงาสีเดียวกับบอลเพื่อให้ดูเรืองแสง (Optional)
                                             boxShadow: `2px 4px 12px ${fillColor}44`
                                         }}
                                     />
@@ -364,7 +310,7 @@ export default function SuccessMailbox({
 
             </div>
 
-            {/* ✨ 2. Frosted Glass Washi Tape */}
+            {/* Frosted Glass Washi Tape */}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[60]">
                 <div className="relative group cursor-default">
                     <div
@@ -386,7 +332,6 @@ export default function SuccessMailbox({
                 </div>
             </div>
 
-            {/* Animations */}
             <style jsx global>{`
                 @keyframes scribble {
                     0% { transform: rotate(0deg) scale(1); border-radius: 50% 45% 55% 40% / 40% 60% 50% 55%; background-position: 0% 0%; }
@@ -402,14 +347,12 @@ export default function SuccessMailbox({
                 }
                 .animate-float-slow { animation: float 6s ease-in-out infinite; }
 
-                /* วิบวับเร็วๆ สำหรับดาว */
                 @keyframes pulse-fast {
                     0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
                     50% { transform: scale(0.8) rotate(15deg); opacity: 0.8; }
                 }
                 .animate-pulse-fast { animation: pulse-fast 1.5s ease-in-out infinite; }
 
-                /* 〰️ Wiggle Outline: เส้นขอบขยับช้าๆ */
                 @keyframes wiggle-slow {
                     0% { border-radius: 55% 40% 50% 60% / 50% 60% 40% 55%; transform: rotate(-3deg) scale(1.05); }
                     33% { border-radius: 50% 55% 45% 50% / 55% 50% 60% 45%; transform: rotate(0deg) scale(1.03); }
@@ -418,7 +361,6 @@ export default function SuccessMailbox({
                 }
                 .animate-wiggle-slow { animation: wiggle-slow 4s ease-in-out infinite; }
 
-                /* 🌟 Orbit Animation: หมุน Container ช้าๆ */
                 @keyframes spin-slow {
                     from { transform: rotate(0deg); }
                     to { transform: rotate(360deg); }
