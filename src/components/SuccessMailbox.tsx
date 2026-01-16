@@ -58,6 +58,7 @@ export default function SuccessMailbox({
     const [doodles, setDoodles] = useState<DoodleItem[]>([]);
     const ballDomRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // ✨ Generate Random Doodles (Logic ใหม่: กระจายรอบนอก)
     useEffect(() => {
@@ -144,6 +145,17 @@ export default function SuccessMailbox({
         }
         World.add(engine.world, crowdBodies);
 
+        const Mouse = Matter.Mouse;
+        const MouseConstraint = Matter.MouseConstraint;
+        if (containerRef.current) {
+            const mouse = Mouse.create(containerRef.current);
+            const mouseConstraint = MouseConstraint.create(engine, {
+                mouse: mouse,
+                constraint: { stiffness: 0.2, render: { visible: false } }
+            });
+            World.add(engine.world, mouseConstraint);
+        }
+
         for (let i = 0; i < 200; i++) { Engine.update(engine, 1000 / 60); }
         setBalls(initialBalls);
 
@@ -184,7 +196,7 @@ export default function SuccessMailbox({
     }, [userTheme, ballCount]);
 
     return (
-        <div className="relative w-[400px] h-[500px]">
+        <div ref={containerRef} className="relative w-[400px] h-[500px]">
 
             {/* ✨ 1. Atmosphere Doodles */}
             {/* ไม่ใช้ z-index: -1 แต่ใช้ pointer-events-none เพื่อให้มันลอยอยู่รอบๆ โดยไม่บังการคลิก */}
@@ -301,14 +313,11 @@ export default function SuccessMailbox({
                                 <>
                                     {/* 1. The Magic Core (แกนพลังงานด้านใน) - เต้นตุบๆ */}
                                     <div
-                                        className="absolute inset-0 m-auto rounded-full animate-pulse-core"
+                                        className="w-[85%] h-[85%] rounded-full animate-scribble"
                                         style={{
-                                            width: '60%',
-                                            height: '60%',
-                                            backgroundColor: theme.vivid,
-                                            // แสงฟุ้งจากแกนกลาง
-                                            boxShadow: `0 0 20px ${theme.vivid}, 0 0 40px ${theme.vivid}66`,
-                                            filter: 'blur(5px)', // เบลอให้ดูเป็นก้อนพลังงาน
+                                            backgroundImage: `repeating-linear-gradient(45deg, ${fillColor}, ${fillColor} 2px, transparent 2px, transparent 6px)`,
+                                            border: 'none', // ไม่มีขอบที่เนื้อสี
+                                            borderRadius: '50% 45% 55% 40% / 40% 60% 50% 55%',
                                         }}
                                     />
 
@@ -322,8 +331,6 @@ export default function SuccessMailbox({
                                             boxShadow: '2px 4px 8px rgba(0,0,0,0.15)'
                                         }}
                                     />
-
-
                                 </>
                             )}
                         </div>
