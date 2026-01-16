@@ -9,6 +9,25 @@ export const FONTS = [
         envelopeSenderText: 'text-[6px]'
     },
     {
+        id: 'font-chula-narak',
+        name: 'Chula Narak',
+        size: 'text-[22px] md:text-[26px]',
+        senderSize: 'text-[24px]',
+        senderText: 'text-[18px]',
+        envelopeText: 'text-[18px]',
+        envelopeSenderText: 'text-[14px]'
+    },
+    {
+        id: 'font-jao-august',
+        name: 'Jao August',
+        size: 'text-[16px] md:text-[20px]',
+        senderSize: 'text-[18px]',
+        senderText: 'text-[12px]',
+        envelopeText: 'text-[12px]',
+        envelopeSenderText: 'text-[8px]'
+    },
+
+    {
         id: 'font-pani',
         name: 'PANI New Year',
         size: 'text-[18px] md:text-[22px]',
@@ -16,15 +35,5 @@ export const FONTS = [
         senderText: 'text-[14px]',
         envelopeText: 'text-[14px]',
         envelopeSenderText: 'text-[10px]'
-    },
-    {
-        id: 'font-muek',
-        name: 'Muek Term',
-        size: 'text-[22px] md:text-[26px]',
-        senderSize: 'text-[24px]',
-        senderText: 'text-[18px]',
-        envelopeText: 'text-[18px]',
-        envelopeSenderText: 'text-[14px]'
-    },
-
+    }
 ];

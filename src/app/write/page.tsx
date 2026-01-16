@@ -9,6 +9,16 @@ import { EnvelopeContainer } from '@/components/EnvelopeContainer';
 import { LetterEditor } from '@/components/LetterEditor';
 import { ControlPanel } from '@/components/ControlPanel';
 
+// 🌑 Dark Theme List (อ้างอิงจาก themes.ts)
+// พื้นหลังเหล่านี้ถือว่าเป็น "สีเข้ม" -> Dots สีขาว
+const DARK_THEME_BGS = [
+  'bg-sapphire',        // Royal Blue
+  'bg-spanish-bistre',  // Pink Pop! (Darkish)
+  'bg-pine-tree',       // Fresh Orange (Background is Dark Green)
+  'bg-claret',          // Red Wine
+  'bg-dark-charcoal'    // Eggplant
+];
+
 export default function TimeCapsulePage() {
   const router = useRouter();
   const {
@@ -17,6 +27,12 @@ export default function TimeCapsulePage() {
     refs,
     derived
   } = useLetterLogic();
+
+  // 1. Theme Logic: เช็คว่าเป็นธีมสีเข้มหรือไม่
+  const isDarkTheme = DARK_THEME_BGS.includes(derived.currentTheme.pageBg);
+
+  // 2. Dot Pattern Logic: กำหนดสีจุดตามความเข้มของพื้นหลัง
+  const dotColor = isDarkTheme ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
 
   useEffect(() => {
     if (state.isSent) {
@@ -38,7 +54,12 @@ export default function TimeCapsulePage() {
   return (
     <main
       className={`h-screen w-full flex items-center justify-center overflow-hidden p-4 transition-colors duration-700 ${derived.currentTheme.pageBg}`}
-      style={{ perspective: '2000px' }}
+      style={{
+        perspective: '2000px',
+        // 2. Dot Pattern Background (ใส่ลายจุดที่นี่)
+        backgroundImage: `radial-gradient(${dotColor} 1.5px, transparent 1.5px)`,
+        backgroundSize: '24px 24px'
+      }}
     >
       <LoginButton />
 

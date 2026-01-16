@@ -117,16 +117,41 @@ export default function SuccessMailbox({
 
         const engine = Engine.create();
         engineRef.current = engine;
-        engine.gravity.y = 1;
+        engine.gravity.y = 1.5;
 
         const width = 400;
         const height = 500;
         const wallOptions = { isStatic: true };
 
+        // คำนวณความสูงกำแพงพิเศษ ให้สูงครอบคลุมไปถึงจุดเกิดบอลข้างบน
+        // ให้สูงสัก 2000px ไปเลย จะได้ไม่มีทางหลุด
+        const wallHeight = 2000;
+
         World.add(engine.world, [
+            // 1. พื้น (Bottom) - เหมือนเดิม
             Bodies.rectangle(width / 2, height + 20, width, WALL_THICK, wallOptions),
-            Bodies.rectangle(0, height / 2, WALL_THICK, height, wallOptions),
-            Bodies.rectangle(width, height / 2, WALL_THICK, height, wallOptions)
+
+            // 2. กำแพงซ้าย (Left) - 🏗️ ขยายความสูง และขยับจุดกึ่งกลางขึ้นไป
+            Bodies.rectangle(
+                0,                          // x
+                height / 2 - (wallHeight / 2) + (height / 2), // y: ขยับ center ขึ้นไปเพื่อให้คลุมพื้นที่ด้านบน
+                WALL_THICK,                 // width
+                wallHeight,                 // height: สูง 2000px
+                wallOptions
+            ),
+
+            // 3. กำแพงขวา (Right) - 🏗️ ทำเหมือนกำแพงซ้าย
+            Bodies.rectangle(
+                width,                      // x
+                height / 2 - (wallHeight / 2) + (height / 2), // y
+                WALL_THICK,                 // width
+                wallHeight,                 // height
+                wallOptions
+            ),
+
+            // 4. เพดาน (Ceiling) - 🔒 ปิดฝากล่องด้านบนสุดกันบอลกระเด็นหลุด
+            // วางไว้ที่ y = -1000 (สูงมากพอที่บอลจะไม่ติดตอนเกิด แต่ต่ำพอที่จะกันบอลหลุดโลก)
+            Bodies.rectangle(width / 2, -1000, width, WALL_THICK, wallOptions)
         ]);
 
         const crowdCount = Math.max(0, ballCount - 1);
@@ -277,10 +302,9 @@ export default function SuccessMailbox({
                                     <div
                                         className="absolute inset-0 rounded-full"
                                         style={{
-                                            backgroundColor: theme.vivid, // ใช้สี Vivid แต่ลด Opacity เอาจะสวยกว่า
-                                            opacity: 0.30, // 👈 คีย์สำคัญ: ปรับให้จางเหลือ 15% (มองทะลุได้แน่นอน)
-                                            transform: 'scale(0.8)', // หดสีเข้าไปข้างใน
-                                            filter: 'blur(10px)', // เบลอเนื้อสีให้ฟุ้งๆ ไม่เป็นก้อนทึบ
+                                            backgroundImage: `repeating-linear-gradient(45deg, ${fillColor}, ${fillColor} 2px, transparent 2px, transparent 6px)`,
+                                            transform: 'scale(0.75)',
+                                            filter: 'blur(2px)',
                                         }}
                                     />
 
@@ -323,12 +347,13 @@ export default function SuccessMailbox({
 
                                     {/* 2. The Crystal Shell (เปลือกแก้ววิเศษ) */}
                                     <div
-                                        className="absolute inset-0 rounded-full border-[3px] border-[#2d2d2d] pointer-events-none animate-wiggle-slow"
+                                        className="absolute inset-0 rounded-full border-[3px] pointer-events-none animate-wiggle-slow"
                                         style={{
                                             transform: 'rotate(-3deg) scale(1.05)',
                                             borderRadius: '55% 40% 50% 60% / 50% 60% 40% 55%',
-                                            // เพิ่มเงาให้เส้นดำนิดหน่อย ให้ดูลอยออกมา
-                                            boxShadow: '2px 4px 8px rgba(0,0,0,0.15)'
+                                            borderColor: '#2d2d2d',
+                                            // เพิ่มเงาสีเดียวกับบอลเพื่อให้ดูเรืองแสง (Optional)
+                                            boxShadow: `2px 4px 12px ${fillColor}44`
                                         }}
                                     />
                                 </>
@@ -376,13 +401,6 @@ export default function SuccessMailbox({
                     50% { transform: translateY(-15px) rotate(5deg); }
                 }
                 .animate-float-slow { animation: float 6s ease-in-out infinite; }
-
-                /* เด้งดึ๋งเล็กๆ สำหรับหัวใจ */
-                @keyframes bounce-mini {
-                    0%, 100% { transform: translateY(0) scale(1); }
-                    50% { transform: translateY(-4px) scale(1.1); }
-                }
-                .animate-bounce-mini { animation: bounce-mini 1s cubic-bezier(0.28, 0.84, 0.42, 1) infinite; }
 
                 /* วิบวับเร็วๆ สำหรับดาว */
                 @keyframes pulse-fast {

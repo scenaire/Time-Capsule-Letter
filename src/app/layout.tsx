@@ -11,14 +11,14 @@ const fontPani = localFont({
   variable: '--font-pani',
 })
 
-const fontMuek = localFont({
-  src: '../../public/fonts/SOV_MuekMod_Bold.ttf',
-  variable: '--font-muek',
-})
-
 const fontADELIA = localFont({
   src: '../../public/fonts/ADELIA.otf',
   variable: '--font-adelia',
+})
+
+const fontJaoAugust = localFont({
+  src: '../../public/fonts/JaoAugust.ttf',
+  variable: '--font-jao-august',
 })
 
 const fontIbmPlex = IBM_Plex_Sans_Thai({
@@ -33,6 +33,11 @@ const fontAnuphan = Anuphan({
   variable: "--font-anuphan", // กำหนดชื่อตัวแปร
 });
 
+const fontChulaNarak = localFont({
+  src: '../../public/fonts/ChulaNarakBold.ttf',
+  variable: '--font-chula-narak',
+})
+
 // 2. ตั้งค่าข้อมูลพื้นฐานของเว็บไซต์ (Metadata)
 export const metadata: Metadata = {
   title: "Time Capsule 2026 | จดหมายถึงอนาคต",
@@ -44,11 +49,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="th">
       {/* เพิ่ม variable ของฟอนต์ใหม่ลงใน body */}
       <body className={`
-        ${fontPani.variable} 
-        ${fontMuek.variable} 
+        ${fontPani.variable}  
         ${fontADELIA.variable}
+        ${fontJaoAugust.variable}
         ${fontAnuphan.variable}
         ${fontIbmPlex.variable}
+        ${fontChulaNarak.variable}
         antialiased
       `}>
         <Providers>{children}</Providers>

@@ -25,9 +25,50 @@ export const LetterEditor = ({
     textareaRef
 }: LetterEditorProps) => {
 
+    // ✨ 1. เพิ่ม Ref สำหรับตัวเงา (Shadow)
+    const shadowRef = React.useRef<HTMLTextAreaElement>(null);
+
+    // ✨ 2. แยก Class พื้นฐานออกมาเพื่อให้ทั้งตัวจริงและตัวเงาเท่ากันเป๊ะ
+    // สังเกตว่า transition-all duration-300 ยังอยู่ เพื่อให้ตัวจริงขยับนุ่มๆ
+    const baseTextAreaClass = `w-full bg-transparent border-none outline-none resize-none leading-relaxed overflow-hidden transition-all duration-300 ${font.size} ${theme.placeholder}`;
+
+    React.useEffect(() => {
+        const textarea = textareaRef.current;
+        const shadow = shadowRef.current;
+        if (!textarea || !shadow) return;
+
+        const adjustHeight = () => {
+            // A. ก๊อปปี้ข้อความไปใส่ตัวเงา
+            shadow.value = textarea.value;
+
+            // B. รีเซ็ตความสูงตัวเงาเป็น auto เพื่อวัดขนาดใหม่ (ตัวจริงไม่ถูกรีเซ็ต เลยไม่กระตุก)
+            shadow.style.height = 'auto';
+
+            // C. เอาความสูงที่วัดได้จากตัวเงา ไปใส่ตัวจริง
+            // ตัวจริงที่มี transition จะค่อยๆ ไหลไปหาความสูงนี้เอง
+            const newHeight = shadow.scrollHeight;
+            textarea.style.height = `${newHeight}px`;
+        };
+
+        // 1. รอบแรก: ปรับทันที
+        adjustHeight();
+
+        // 2. รอบสอง: รอให้ Transition ของฟอนต์ (300ms) จบก่อน แล้ววัดใหม่อีกที
+        // เผื่อไว้ 350ms กันพลาด
+        const timeoutId = setTimeout(() => {
+            adjustHeight();
+        }, 320);
+
+        return () => clearTimeout(timeoutId);
+    }, [
+        postcard.message,
+        font, // เช็คว่ามี font ใน dependency array ไหม (สำคัญ)
+        textareaRef
+    ]);
+
     return (
         <div
-            // 🔴 1 & 2: ใส่ Wobbly Border, Tape Decoration และ Hard Shadow
+            // 🔴 1 & 2: ใส่ Wobbly Border, Tape Decoration และ Hard Shadow (คงเดิม)
             className={`relative flex-1 flex flex-col overflow-hidden z-10 transition-opacity duration-500
                 ${isFolding ? 'opacity-0 pointer-events-none' : 'opacity-100'}
                  decoration-tape border-[2px] border-[#000000] hard-shadow-lg`}
@@ -37,7 +78,7 @@ export const LetterEditor = ({
                 padding: '0'
             }}
         >
-            {/* 🔴 แก้ไข 1: Header ใช้ฟอนต์และสีเดียวกับ Message */}
+            {/* 🔴 แก้ไข 1: Header ใช้ฟอนต์และสีเดียวกับ Message (คงเดิม) */}
             <div className="px-10 md:px-14 pt-12 pb-2 mb-2 border-b-2 border-none border-current opacity-70 relative z-20"
                 style={{ color: theme.text }} // ใช้สีเดียวกับ Text
             >
@@ -45,7 +86,6 @@ export const LetterEditor = ({
                     style={{ fontFamily: `var(--${font.id})` }} // ใช้ฟอนต์ลายมือ
                 >
                     To the One I Haven’t Met Yet.
-
                 </h2>
             </div>
 
@@ -59,26 +99,45 @@ export const LetterEditor = ({
                     WebkitMaskImage: `linear-gradient(to bottom, ${scrollState.isAtTop ? 'black' : 'transparent'} 0%, black 15%, black 85%, ${scrollState.isAtBottom ? 'black' : 'transparent'} 100%)`
                 }}
             >
+                {/* ✨ 3. ตัวจริง (Visible) */}
                 <textarea
                     ref={textareaRef}
                     placeholder="เขียนถึงตัวคุณในปี 2027..."
                     value={postcard.message}
                     onChange={(e) => onUpdatePostcard('message', e.target.value)}
-                    className={`w-full bg-transparent border-none outline-none resize-none leading-relaxed overflow-hidden transition-all duration-300 ${font.size} ${theme.placeholder}`}
+                    // ใช้ base class + สี text
+                    className={`${baseTextAreaClass}`}
                     style={{
                         fontFamily: `var(--${font.id})`,
-                        color: theme.text
+                        color: theme.text,
+                        lineHeight: '1.45',
+                        // height จะถูกคุมโดย JS ไม่ต้องใส่ auto ตรงนี้
                     }}
                     disabled={isFolding}
                 />
+
+                {/* ✨ 4. ตัวเงา (Shadow/Hidden) เอาไว้วัดความสูง */}
+                <textarea
+                    ref={shadowRef}
+                    aria-hidden="true"
+                    tabIndex={-1}
+                    readOnly
+                    value={postcard.message}
+                    className={`${baseTextAreaClass} absolute top-0 left-0 -z-50 opacity-0 pointer-events-none`}
+                    style={{
+                        fontFamily: `var(--${font.id})`,
+                        lineHeight: '1.45',
+                        height: 'auto', // ตัวเงาต้อง auto เสมอเพื่อวัดค่า
+                        padding: '0',   // ต้องระวังเรื่อง padding ถ้า parent มี padding แล้ว
+                        margin: '0'
+                    }}
+                />
             </div>
 
-            {/* 🔴 แก้ไข 1 & 4: Footer ใช้ฟอนต์เดียวกัน และเพิ่มเส้นหยักใต้ชื่อ */}
+            {/* 🔴 แก้ไข 1 & 4: Footer ใช้ฟอนต์เดียวกัน และเพิ่มเส้นหยักใต้ชื่อ (คงเดิม) */}
             <div className="px-10 md:px-14 pb-12 pt-4 flex flex-col items-end shrink-0 relative z-20"
                 style={{ color: theme.text }}
             >
-
-
                 <span className={`font-bold text-xs tracking-widest uppercase opacity-80 mb-1 ${font.senderText}`}
                     style={{ fontFamily: `var(--${font.id})` }}
                 >

@@ -52,9 +52,10 @@
   /* ฟอนต์ */
   --font-pani: var(--font-pani);
   --font-ibm-plex: var(--font-ibm-plex);
-  --font-muek: var(--font-muek);
   --font-adelia: var(--font-adelia);
   --font-anuphan: var(--font-anuphan);
+  --font-jao-august: var(--font-jao-august);
+  --font-chula-narak: var(--font-chula-narak);
 }
 
 /* --- 3. Hand-Drawn Utility Classes --- */
