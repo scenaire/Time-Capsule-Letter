@@ -235,6 +235,7 @@ export default function SuccessMailbox({
             {/* Balls Container */}
             <div className="absolute inset-0 z-20 overflow-hidden"
                 style={{ borderRadius: '255px 15px 225px 15px / 15px 225px 15px 255px' }}>
+
                 {balls.map(ball => {
                     const theme = THEME_MAP[ball.themeKey] || THEME_MAP['blue'];
                     const fillColor = ball.isUser ? theme.vivid : theme.muted;
@@ -244,32 +245,91 @@ export default function SuccessMailbox({
                             key={ball.id}
                             ref={el => { if (el) ballDomRefs.current.set(ball.id, el); }}
                             className={`
-                                absolute top-0 left-0 w-[66px] h-[66px] rounded-full
-                                flex items-center justify-center
-                                ${ball.isUser ? 'z-50' : 'z-0'}
-                            `}
+                absolute top-0 left-0 w-[66px] h-[66px] rounded-full
+                flex items-center justify-center
+                ${ball.isUser ? 'z-50' : 'z-0'}
+            `}
                             style={{
-                                opacity: ball.isUser ? 1 : 0.6,
-                                filter: ball.isUser ? 'none' : 'blur(1px)',
-                                transition: 'opacity 0.5s, filter 0.5s'
+                                // Hero: ชัดเจน
+                                // Crowd: โปร่งแสงนิดเดียว (0.95) เพื่อให้ดูมีน้ำหนัก ไม่จางหาย
+                                opacity: ball.isUser ? 1 : 0.8,
+                                transition: 'all 0.5s ease-out'
                             }}
                         >
-                            <div
-                                className={`w-[85%] h-[85%] rounded-full ${ball.isUser ? 'animate-scribble' : ''}`}
-                                style={{
-                                    backgroundImage: `repeating-linear-gradient(45deg, ${fillColor}, ${fillColor} 2px, transparent 2px, transparent 6px)`,
-                                    border: ball.isUser ? 'none' : '1.5px solid rgba(0,0,0,0.2)',
-                                    borderRadius: '50% 45% 55% 40% / 40% 60% 50% 55%',
-                                }}
-                            />
+                            {/* =========================================
+               🔮 CROWD BALL (True Glass Style - แก้วใสจริง) 
+               ========================================= */}
+                            {!ball.isUser && (
+                                <>
+                                    {/* Layer 1: The Tint (สีระเรื่อๆ ด้านใน) - แก้ไข: จางลงมาก + เบลอ */}
+                                    <div
+                                        className="absolute inset-0 rounded-full"
+                                        style={{
+                                            backgroundColor: theme.vivid, // ใช้สี Vivid แต่ลด Opacity เอาจะสวยกว่า
+                                            opacity: 0.30, // 👈 คีย์สำคัญ: ปรับให้จางเหลือ 15% (มองทะลุได้แน่นอน)
+                                            transform: 'scale(0.8)', // หดสีเข้าไปข้างใน
+                                            filter: 'blur(10px)', // เบลอเนื้อสีให้ฟุ้งๆ ไม่เป็นก้อนทึบ
+                                        }}
+                                    />
+
+                                    {/* Layer 2: The Glass Shell (เปลือกแก้วใส) */}
+                                    <div
+                                        className="absolute inset-0 rounded-full"
+                                        style={{
+                                            // ขอบแก้ว: ขาวบางๆ
+                                            border: '1px solid rgba(255, 255, 255, 0.6)',
+
+                                            // ความลึก (Depth):
+                                            // - inset ขาว: ขอบแก้วด้านใน
+                                            // - inset สีตามธีม: เรืองแสงที่ขอบล่างนิดๆ
+                                            boxShadow: `
+                                inset 0 0 15px rgba(255,255,255,0.5),
+                                inset 2px -4px 6px ${theme.muted}66, 
+                                0 8px 15px rgba(0,0,0,0.05)
+                            `,
+
+                                            // ❌ NO BLUR: ใสปิ๊ง
+                                            backdropFilter: 'none',
+                                        }}
+                                    />
+                                </>
+                            )}
+                            {/* =========================================
+               🌟 HERO BALL (Glowing Crystal Style)
+               ========================================= */}
                             {ball.isUser && (
-                                <div className="absolute inset-0 rounded-full border-[3px] border-[#2d2d2d] pointer-events-none"
-                                    style={{ transform: 'rotate(-3deg) scale(1.05)', borderRadius: '55% 40% 50% 60% / 50% 60% 40% 55%' }}
-                                />
+                                <>
+                                    {/* 1. The Magic Core (แกนพลังงานด้านใน) - เต้นตุบๆ */}
+                                    <div
+                                        className="absolute inset-0 m-auto rounded-full animate-pulse-core"
+                                        style={{
+                                            width: '60%',
+                                            height: '60%',
+                                            backgroundColor: theme.vivid,
+                                            // แสงฟุ้งจากแกนกลาง
+                                            boxShadow: `0 0 20px ${theme.vivid}, 0 0 40px ${theme.vivid}66`,
+                                            filter: 'blur(5px)', // เบลอให้ดูเป็นก้อนพลังงาน
+                                        }}
+                                    />
+
+                                    {/* 2. The Crystal Shell (เปลือกแก้ววิเศษ) */}
+                                    <div
+                                        className="absolute inset-0 rounded-full border-[3px] border-[#2d2d2d] pointer-events-none animate-wiggle-slow"
+                                        style={{
+                                            transform: 'rotate(-3deg) scale(1.05)',
+                                            borderRadius: '55% 40% 50% 60% / 50% 60% 40% 55%',
+                                            // เพิ่มเงาให้เส้นดำนิดหน่อย ให้ดูลอยออกมา
+                                            boxShadow: '2px 4px 8px rgba(0,0,0,0.15)'
+                                        }}
+                                    />
+
+
+                                </>
                             )}
                         </div>
                     );
                 })}
+
             </div>
 
             {/* ✨ 2. Frosted Glass Washi Tape */}
@@ -309,6 +369,43 @@ export default function SuccessMailbox({
                     50% { transform: translateY(-15px) rotate(5deg); }
                 }
                 .animate-float-slow { animation: float 6s ease-in-out infinite; }
+
+                /* เด้งดึ๋งเล็กๆ สำหรับหัวใจ */
+                @keyframes bounce-mini {
+                    0%, 100% { transform: translateY(0) scale(1); }
+                    50% { transform: translateY(-4px) scale(1.1); }
+                }
+                .animate-bounce-mini { animation: bounce-mini 1s cubic-bezier(0.28, 0.84, 0.42, 1) infinite; }
+
+                /* วิบวับเร็วๆ สำหรับดาว */
+                @keyframes pulse-fast {
+                    0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+                    50% { transform: scale(0.8) rotate(15deg); opacity: 0.8; }
+                }
+                .animate-pulse-fast { animation: pulse-fast 1.5s ease-in-out infinite; }
+
+                /* 〰️ Wiggle Outline: เส้นขอบขยับช้าๆ */
+                @keyframes wiggle-slow {
+                    0% { border-radius: 55% 40% 50% 60% / 50% 60% 40% 55%; transform: rotate(-3deg) scale(1.05); }
+                    33% { border-radius: 50% 55% 45% 50% / 55% 50% 60% 45%; transform: rotate(0deg) scale(1.03); }
+                    66% { border-radius: 60% 45% 55% 40% / 45% 55% 50% 60%; transform: rotate(-5deg) scale(1.06); }
+                    100% { border-radius: 55% 40% 50% 60% / 50% 60% 40% 55%; transform: rotate(-3deg) scale(1.05); }
+                }
+                .animate-wiggle-slow { animation: wiggle-slow 4s ease-in-out infinite; }
+
+                /* 🌟 Orbit Animation: หมุน Container ช้าๆ */
+                @keyframes spin-slow {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+
+                @keyframes pulse-core {
+                    0% { transform: scale(0.95); opacity: 0.8; }
+                    50% { transform: scale(1.1); opacity: 1; }
+                    100% { transform: scale(0.95); opacity: 0.8; }
+                }
+                .animate-pulse-core { animation: pulse-core 2s ease-in-out infinite; }
             `}</style>
         </div>
     );
