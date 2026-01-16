@@ -49,6 +49,10 @@
   --color-eggplant: #5D4459;
   --color-dark-charcoal: #362F32;
 
+  --color-berry-red: #E90A0A;
+  --color-snowdrop: #F4E8D4;
+  --color-azure-blue: #8DB9E8;
+
   /* ฟอนต์ */
   --font-pani: var(--font-pani);
   --font-ibm-plex: var(--font-ibm-plex);

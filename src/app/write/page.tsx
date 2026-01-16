@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from "next/navigation";
 import LoginButton from '@/components/LoginButton';
@@ -8,16 +8,6 @@ import { useLetterLogic } from '@/hooks/useLetterLogic';
 import { EnvelopeContainer } from '@/components/EnvelopeContainer';
 import { LetterEditor } from '@/components/LetterEditor';
 import { ControlPanel } from '@/components/ControlPanel';
-
-// 🌑 Dark Theme List (อ้างอิงจาก themes.ts)
-// พื้นหลังเหล่านี้ถือว่าเป็น "สีเข้ม" -> Dots สีขาว
-const DARK_THEME_BGS = [
-  'bg-sapphire',        // Royal Blue
-  'bg-spanish-bistre',  // Pink Pop! (Darkish)
-  'bg-pine-tree',       // Fresh Orange (Background is Dark Green)
-  'bg-claret',          // Red Wine
-  'bg-dark-charcoal'    // Eggplant
-];
 
 export default function TimeCapsulePage() {
   const router = useRouter();
@@ -28,8 +18,11 @@ export default function TimeCapsulePage() {
     derived
   } = useLetterLogic();
 
+  // ✨ สร้าง State เช็คว่ากำลังพิมพ์อยู่ไหม
+  const [isTyping, setIsTyping] = useState(false);
+
   // 1. Theme Logic: เช็คว่าเป็นธีมสีเข้มหรือไม่
-  const isDarkTheme = DARK_THEME_BGS.includes(derived.currentTheme.pageBg);
+  const isDarkTheme = derived.currentTheme.isDark;
 
   // 2. Dot Pattern Logic: กำหนดสีจุดตามความเข้มของพื้นหลัง
   const dotColor = isDarkTheme ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
@@ -118,14 +111,23 @@ export default function TimeCapsulePage() {
       </AnimatePresence>
 
       {!state.isSent && !state.isFolding && (
-        <ControlPanel
-          theme={derived.currentTheme}
-          isMessageEmpty={!state.postcard.message}
-          onCycleFont={actions.cycleFont}
-          onCycleTheme={actions.cycleTheme}
-
-          onStartFolding={actions.startFoldingRitual}
-        />
+        // ✨ เพิ่ม Logic การซ่อน Control Panel ตรงนี้
+        // ใช้ translate-y เพื่อเลื่อนลงไปข้างล่างจอ
+        <div
+          className={`absolute bottom-4 left-0 right-0 z-50 flex justify-center pointer-events-none transition-transform duration-300 
+          ${isTyping ? 'translate-y-[200%] md:translate-y-0' : 'translate-y-0'}`}
+        >
+          <div className="pointer-events-auto">
+            <ControlPanel
+              theme={derived.currentTheme}
+              font={derived.currentFont}
+              isMessageEmpty={!state.postcard.message}
+              onCycleFont={actions.cycleFont}
+              onCycleTheme={actions.cycleTheme}
+              onStartFolding={actions.startFoldingRitual}
+            />
+          </div>
+        </div>
       )}
     </main>
   );

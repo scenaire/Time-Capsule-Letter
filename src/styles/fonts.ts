@@ -21,10 +21,10 @@ export const FONTS = [
         id: 'font-jao-august',
         name: 'Jao August',
         size: 'text-[16px] md:text-[20px]',
-        senderSize: 'text-[18px]',
-        senderText: 'text-[12px]',
+        senderSize: 'text-[20px]',
+        senderText: 'text-[14px]',
         envelopeText: 'text-[12px]',
-        envelopeSenderText: 'text-[8px]'
+        envelopeSenderText: 'text-[10px]'
     },
 
     {

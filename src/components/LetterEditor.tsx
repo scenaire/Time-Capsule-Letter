@@ -1,5 +1,5 @@
 // src/components/LetterEditor.tsx
-import React, { RefObject } from 'react';
+import React, { RefObject, useRef, useEffect } from 'react';
 
 interface LetterEditorProps {
     postcard: { sender: string; message: string };
@@ -11,7 +11,31 @@ interface LetterEditorProps {
     onScroll: () => void;
     scrollRef: RefObject<HTMLDivElement | null>;
     textareaRef: RefObject<HTMLTextAreaElement | null>;
+    onFocus?: () => void;
+    onBlur?: () => void;
 }
+
+// 📐 Easing Function
+const easeInOutQuad = (t: number) => t < .5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+const animateScroll = (element: HTMLElement, to: number, duration: number) => {
+    const start = element.scrollTop;
+    const change = to - start;
+    const startTime = performance.now();
+
+    const animate = (currentTime: number) => {
+        const timeElapsed = currentTime - startTime;
+        const progress = Math.min(timeElapsed / duration, 1);
+        const ease = easeInOutQuad(progress);
+
+        element.scrollTop = start + (change * ease);
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        }
+    };
+    requestAnimationFrame(animate);
+};
 
 export const LetterEditor = ({
     postcard,
@@ -22,74 +46,123 @@ export const LetterEditor = ({
     onUpdatePostcard,
     onScroll,
     scrollRef,
-    textareaRef
+    textareaRef,
+    onFocus,
+    onBlur
 }: LetterEditorProps) => {
 
-    // ✨ 1. เพิ่ม Ref สำหรับตัวเงา (Shadow)
-    const shadowRef = React.useRef<HTMLTextAreaElement>(null);
+    const shadowRef = useRef<HTMLTextAreaElement>(null);
+    const lastFontIdRef = useRef(font.id);
+    const lastHeightRef = useRef(0);
 
-    // ✨ 2. แยก Class พื้นฐานออกมาเพื่อให้ทั้งตัวจริงและตัวเงาเท่ากันเป๊ะ
-    // สังเกตว่า transition-all duration-300 ยังอยู่ เพื่อให้ตัวจริงขยับนุ่มๆ
-    const baseTextAreaClass = `w-full bg-transparent border-none outline-none resize-none leading-relaxed overflow-hidden transition-all duration-300 ${font.size} ${theme.placeholder}`;
+    // ✨ CSS Config: คุมเองเหมือนเดิม
+    const baseClass = `w-full bg-transparent border-none outline-none resize-none leading-relaxed overflow-hidden ${theme.placeholder}`;
+    const realClass = `${baseClass} ${font.size}`;
+    const shadowClass = `${baseClass} ${font.size}`;
 
-    React.useEffect(() => {
+    useEffect(() => {
         const textarea = textareaRef.current;
         const shadow = shadowRef.current;
         if (!textarea || !shadow) return;
 
-        const adjustHeight = () => {
-            // A. ก๊อปปี้ข้อความไปใส่ตัวเงา
-            shadow.value = textarea.value;
+        const isFontChanged = lastFontIdRef.current !== font.id;
 
-            // B. รีเซ็ตความสูงตัวเงาเป็น auto เพื่อวัดขนาดใหม่ (ตัวจริงไม่ถูกรีเซ็ต เลยไม่กระตุก)
+        // ฟังก์ชันปรับความสูง
+        const adjustHeight = () => {
+            // 🚨 แก้ไขจุดตาย: ซิงค์ความกว้างให้เท่ากันเป๊ะ! (แก้ปัญหา Scrollbar กินที่)
+            // เราใช้ getBoundingClientRect() เพื่อเอาความกว้างจริงๆ ที่ User เห็น
+            const realWidth = textarea.getBoundingClientRect().width;
+            shadow.style.width = `${realWidth}px`;
+
+            shadow.value = textarea.value;
             shadow.style.height = 'auto';
 
-            // C. เอาความสูงที่วัดได้จากตัวเงา ไปใส่ตัวจริง
-            // ตัวจริงที่มี transition จะค่อยๆ ไหลไปหาความสูงนี้เอง
-            const newHeight = shadow.scrollHeight;
+            // บวก Buffer 10px กันพลาดเรื่อง sub-pixel rendering (แก้ Clipping เศษๆ)
+            const newHeight = shadow.scrollHeight + 10;
+            const currentHeight = lastHeightRef.current;
+
+            // 🔥 Smart Snap: ใหญ่ขึ้น -> ห้าม Transition, เล็กลง -> ค่อยๆ หด
+            if (newHeight > currentHeight) {
+                textarea.style.transition = 'none';
+            } else {
+                textarea.style.transition = 'height 0.3s ease';
+            }
+
             textarea.style.height = `${newHeight}px`;
+            lastHeightRef.current = newHeight;
         };
 
-        // 1. รอบแรก: ปรับทันที
+        // ทำงานทันที
         adjustHeight();
 
-        // 2. รอบสอง: รอให้ Transition ของฟอนต์ (300ms) จบก่อน แล้ววัดใหม่อีกที
-        // เผื่อไว้ 350ms กันพลาด
-        const timeoutId = setTimeout(() => {
-            adjustHeight();
-        }, 320);
+        // แถม: ดัก Resize หน้าจอด้วย เผื่อคนหมุนจอ/ย่อขยายจอ
+        window.addEventListener('resize', adjustHeight);
 
-        return () => clearTimeout(timeoutId);
+        // Logic Scroll (ทำงานเฉพาะตอนเปลี่ยน Font)
+        if (isFontChanged) {
+            // เพิ่ม Delay นิดนึง (50ms) เพื่อความชัวร์หลัง Snap
+            const timeoutId = setTimeout(() => {
+                adjustHeight(); // วัดซ้ำอีกทีก่อน Scroll
+
+                if (scrollRef.current) {
+                    const cursorPos = textarea.selectionStart;
+
+                    // ซิงค์ความกว้างอีกรอบ (สำคัญมากสำหรับการตัดคำที่ถูกต้อง)
+                    const realWidth = textarea.getBoundingClientRect().width;
+                    shadow.style.width = `${realWidth}px`;
+
+                    shadow.value = textarea.value.substring(0, cursorPos);
+                    shadow.style.height = 'auto';
+                    const caretTopPosition = shadow.scrollHeight;
+
+                    // Scroll ไปหา (ลบ 150px)
+                    const targetScrollTop = Math.max(0, caretTopPosition - 150);
+                    animateScroll(scrollRef.current, targetScrollTop, 600);
+
+                    // Cleanup Shadow
+                    shadow.value = textarea.value;
+                    shadow.style.height = 'auto';
+                }
+
+                lastFontIdRef.current = font.id;
+
+            }, 50);
+
+            return () => {
+                clearTimeout(timeoutId);
+                window.removeEventListener('resize', adjustHeight);
+            };
+        }
+
+        return () => window.removeEventListener('resize', adjustHeight);
+
     }, [
         postcard.message,
-        font, // เช็คว่ามี font ใน dependency array ไหม (สำคัญ)
-        textareaRef
+        font,
+        textareaRef,
+        scrollRef
     ]);
 
     return (
         <div
-            // 🔴 1 & 2: ใส่ Wobbly Border, Tape Decoration และ Hard Shadow (คงเดิม)
             className={`relative flex-1 flex flex-col overflow-hidden z-10 transition-opacity duration-500
                 ${isFolding ? 'opacity-0 pointer-events-none' : 'opacity-100'}
                  decoration-tape border-[2px] border-[#000000] hard-shadow-lg`}
             style={{
-                backgroundColor: theme.bg, // ดึงสีพื้นหลังมาจาก Theme
-                // เพิ่ม Padding เพื่อไม่ให้เนื้อหาชิดขอบกระดาษที่เบี้ยวเกินไป
+                backgroundColor: theme.bg,
                 padding: '0'
             }}
         >
-            {/* 🔴 แก้ไข 1: Header ใช้ฟอนต์และสีเดียวกับ Message (คงเดิม) */}
             <div className="px-10 md:px-14 pt-12 pb-2 mb-2 border-b-2 border-none border-current opacity-70 relative z-20"
-                style={{ color: theme.text }} // ใช้สีเดียวกับ Text
+                style={{ color: theme.text }}
             >
                 <h2 className={`font-bold text-center text-xs tracking-widest uppercase mb-1 opacity-70 ${font.senderText}`}
-                    style={{ fontFamily: `var(--${font.id})` }} // ใช้ฟอนต์ลายมือ
+                    style={{ fontFamily: `var(--${font.id})` }}
                 >
                     To the One I Haven’t Met Yet.
                 </h2>
             </div>
 
-            {/* Textarea Zone (Message) */}
             <div
                 ref={scrollRef}
                 onScroll={onScroll}
@@ -99,42 +172,44 @@ export const LetterEditor = ({
                     WebkitMaskImage: `linear-gradient(to bottom, ${scrollState.isAtTop ? 'black' : 'transparent'} 0%, black 15%, black 85%, ${scrollState.isAtBottom ? 'black' : 'transparent'} 100%)`
                 }}
             >
-                {/* ✨ 3. ตัวจริง (Visible) */}
+                {/* ตัวจริง */}
                 <textarea
                     ref={textareaRef}
                     placeholder="เขียนถึงตัวคุณในปี 2027..."
                     value={postcard.message}
                     onChange={(e) => onUpdatePostcard('message', e.target.value)}
-                    // ใช้ base class + สี text
-                    className={`${baseTextAreaClass}`}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
+                    className={realClass}
                     style={{
                         fontFamily: `var(--${font.id})`,
                         color: theme.text,
                         lineHeight: '1.45',
-                        // height จะถูกคุมโดย JS ไม่ต้องใส่ auto ตรงนี้
                     }}
                     disabled={isFolding}
                 />
 
-                {/* ✨ 4. ตัวเงา (Shadow/Hidden) เอาไว้วัดความสูง */}
+                {/* ตัวเงา */}
                 <textarea
                     ref={shadowRef}
                     aria-hidden="true"
                     tabIndex={-1}
                     readOnly
                     value={postcard.message}
-                    className={`${baseTextAreaClass} absolute top-0 left-0 -z-50 opacity-0 pointer-events-none`}
+                    className={`${shadowClass} absolute top-0 left-0 -z-50 opacity-0 pointer-events-none`}
                     style={{
                         fontFamily: `var(--${font.id})`,
                         lineHeight: '1.45',
-                        height: 'auto', // ตัวเงาต้อง auto เสมอเพื่อวัดค่า
-                        padding: '0',   // ต้องระวังเรื่อง padding ถ้า parent มี padding แล้ว
-                        margin: '0'
+                        height: 'auto',
+                        padding: '0',
+                        margin: '0',
+                        transition: 'none',
+                        // ✨ สำคัญ: ต้องใส่ width 100% ไว้ก่อน แต่อย่างไรก็ตาม JS จะมาทับค่านี้
+                        width: '100%'
                     }}
                 />
             </div>
 
-            {/* 🔴 แก้ไข 1 & 4: Footer ใช้ฟอนต์เดียวกัน และเพิ่มเส้นหยักใต้ชื่อ (คงเดิม) */}
             <div className="px-10 md:px-14 pb-12 pt-4 flex flex-col items-end shrink-0 relative z-20"
                 style={{ color: theme.text }}
             >
@@ -153,10 +228,11 @@ export const LetterEditor = ({
                         }}
                         value={postcard.sender}
                         onChange={(e) => onUpdatePostcard('sender', e.target.value)}
+                        onFocus={onFocus}
+                        onBlur={onBlur}
                         disabled={isFolding}
                     />
 
-                    {/* 🔴 แก้ไข 4: เส้น Decoration หยักๆ ใต้ชื่อ (Wavy Line SVG) */}
                     <div className="absolute -bottom-2 right-0 w-full text-current opacity-60 pointer-events-none">
                         <svg width="100%" height="8" viewBox="0 0 100 8" preserveAspectRatio="none">
                             <path d="M0 4 Q 5 0, 10 4 T 20 4 T 30 4 T 40 4 T 50 4 T 60 4 T 70 4 T 80 4 T 90 4 T 100 4"
