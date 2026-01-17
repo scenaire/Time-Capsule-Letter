@@ -4,9 +4,9 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Send } from 'lucide-react';
 import { SEALS } from '@/constants/assets';
-import { EnvelopeBack, EnvelopeFront, EnvelopeFlap, EnvelopeSecond } from '@/components/EnvelopeSVGs';
-import { SealSelector } from '@/components/SealSelector';
-import { ActionButton, UndoButton } from '@/components/ActionButtons';
+import { EnvelopeBack, EnvelopeFront, EnvelopeFlap, EnvelopeSecond } from '@/components/envelope/EnvelopeSVGs';
+import { SealSelector } from '@/components/envelope/SealSelector';
+import { ActionButton, UndoButton } from '@/components/common/ActionButtons';
 
 interface EnvelopeContainerProps {
     envelope: {

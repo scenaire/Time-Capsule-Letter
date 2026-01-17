@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Home, ArrowRight } from "lucide-react";
-import SuccessMailbox from '@/components/SuccessMailbox'; // Import ตัวที่เราเพิ่งสร้าง
+import SuccessMailbox from '@/components/mailbox/SuccessMailbox'; // Import ตัวที่เราเพิ่งสร้าง
 
 
 export function ArchivedContent() {

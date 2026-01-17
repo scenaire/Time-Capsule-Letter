@@ -1,6 +1,6 @@
 "use client";
 
-import MailboxOverlay from '@/components/MailboxOverlay';
+import MailboxOverlay from '@/components/mailbox/MailboxOverlay';
 
 export default function OverlayPage() {
     return (

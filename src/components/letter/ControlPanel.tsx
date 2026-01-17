@@ -1,5 +1,5 @@
 import React from 'react';
-import { ButtonTooltip } from './ButtonTooltip';
+import { ButtonTooltip } from '../common/ButtonTooltip';
 
 interface ControlPanelProps {
     theme: any;
