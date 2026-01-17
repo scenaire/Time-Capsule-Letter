@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { IBM_Plex_Sans_Thai, Anuphan } from "next/font/google";
+import { IBM_Plex_Sans_Thai, Anuphan, Srisakdi } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 

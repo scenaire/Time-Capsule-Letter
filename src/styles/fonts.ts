@@ -35,5 +35,5 @@ export const FONTS = [
         senderText: 'text-[14px]',
         envelopeText: 'text-[14px]',
         envelopeSenderText: 'text-[10px]'
-    }
+    },
 ];
