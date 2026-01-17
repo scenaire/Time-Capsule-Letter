@@ -48,13 +48,13 @@ export default function TimeCapsulePage() {
   // Effect: Redirect after sending
   useEffect(() => {
     if (isSent) {
-      const themeColor = currentTheme.name.toLowerCase();
+      const envId = currentEnvelope.id;
       const timeout = setTimeout(() => {
-        router.push(`/archived?theme=${themeColor}`);
+        router.push(`/archived?envelope=${envId}`);
       }, 500);
       return () => clearTimeout(timeout);
     }
-  }, [isSent, currentTheme, router]);
+  }, [isSent, currentEnvelope, router]);
 
   // Styles
   const dotColor = currentTheme.isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';

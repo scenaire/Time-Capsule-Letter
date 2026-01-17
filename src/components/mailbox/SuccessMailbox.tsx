@@ -3,40 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 // 📦 เปลี่ยนจาก THEMES เป็น ENVELOPES จาก assets.ts
-import { ENVELOPES } from '@/constants/assets';
-
-// 🎨✨ Cute Color Map: ตารางแปลงสีจาก "ซองจริง" เป็น "สีลูกบอลสไตล์เกาหลี"
-// เลือกใช้โทนพาสเทลที่สดใส (High Brightness, Moderate Saturation)
-// 🎨✨ Cute Color Map: แปลงสีซองจริง -> สีลูกบอลสไตล์เกาหลี (Pastel & Milky)
-const CUTE_COLOR_MAP: Record<string, string> = {
-    // 1. Basic
-    'white': '#FFF9C4', // Creamy Yellow (นวลๆ เหมือนเนย)
-    'black': '#CFD8DC', // Blue Grey (เทาฟ้าอ่อนๆ ไม่ดำสนิท)
-
-    // 2. Rhythm Start (Pop & Soft)
-    'pink': '#F48FB1', // Pastel Rose (ชมพูนมเย็น)
-    'ink_teal': '#80DEEA', // Icy Cyan (ฟ้าเขียวน้ำแข็ง)
-    'lemon': '#FFF176', // Soft Lemon (เหลืองสดใส)
-    'grape_ash': '#CE93D8', // Taro Milk (ม่วงเผือก)
-
-    // 3. Earth & Nature (Warm)
-    'mint': '#A5D6A7', // Soft Mint (เขียวมินต์)
-    'butter': '#FFE0B2', // Peach Cream (ส้มนวลๆ)
-    'burnt_matcha': '#C5E1A5', // Light Sage (เขียวตองอ่อน)
-
-    // 4. Pop & Classic
-    'sky': '#90CAF9', // Baby Blue (ฟ้าเด็กน้อย)
-    'electric_apricot': '#FFAB91', // Soft Coral (ส้มพีช)
-    'navy': '#9FA8DA', // Blueberry Milk (น้ำเงินม่วงอ่อน)
-
-    // 5. Cozy Finish
-    'lavender': '#E1BEE7', // Pale Lavender (ม่วงอ่อนมาก)
-    'matcha': '#C8E6C9', // Green Tea Latte (เขียวชาเขียวนม)
-    'cocoa': '#BCAAA4', // Mocha Cream (น้ำตาลกาแฟนม)
-
-    // Fallback
-    'default': '#FFE082'
-};
+import { ENVELOPES, CUTE_COLOR_MAP } from '@/constants/assets';
 
 const BALL_RADIUS = 33;
 const PHYSICS_RADIUS = BALL_RADIUS - 1;
@@ -53,7 +20,7 @@ const DOODLE_SHAPES = [
 type Ball = {
     id: number;
     isUser: boolean;
-    envelopeId: string; // ✉️ เก็บ ID ของซองจดหมายแทน themeName
+    color: string; // ✨ เปลี่ยนตรงนี้
 };
 
 type DoodleItem = {
@@ -69,10 +36,10 @@ type DoodleItem = {
 };
 
 export default function SuccessMailbox({
-    userEnvelopeId = 'white', // ✉️ รับ ID ซองจดหมายแทน userTheme
+    userEnvelopeId = 'white', // ✨ รับสีมาเลย (Default เป็นสีครีม)
     ballCount = 40
 }: {
-    userEnvelopeId?: string;
+    userEnvelopeId?: string;     // ✨ เปลี่ยน Type ตรงนี้ด้วย
     ballCount?: number;
 }) {
     const engineRef = useRef<Matter.Engine | null>(null);
@@ -154,15 +121,19 @@ export default function SuccessMailbox({
         const crowdBodies: Matter.Body[] = [];
 
         for (let i = 0; i < crowdCount; i++) {
-            // 🎲 สุ่ม Envelope จากรายการทั้งหมด
+            // สุ่ม ID ซองจาก List
             const randomEnv = ENVELOPES[Math.floor(Math.random() * ENVELOPES.length)];
+
+            // ✅ Map ID เป็นสี (ถ้าหาไม่เจอใช้ Default)
+            const color = CUTE_COLOR_MAP[randomEnv.id] || CUTE_COLOR_MAP['default'];
+
             const startX = Math.random() * 300 + 50;
             const startY = Math.random() * 300;
             const body = Bodies.circle(startX, startY, PHYSICS_RADIUS, {
                 restitution: 0.3, friction: 0.1, density: 0.04,
             });
             crowdBodies.push(body);
-            initialBalls.push({ id: body.id, isUser: false, envelopeId: randomEnv.id });
+            initialBalls.push({ id: body.id, isUser: false, color }); // ✅ ใส่สีที่ Map แล้ว
         }
         World.add(engine.world, crowdBodies);
 
@@ -196,18 +167,23 @@ export default function SuccessMailbox({
         timeoutRef.current = setTimeout(() => {
             if (!engineRef.current) return;
 
-            // 💌 หา Envelope ของ User จาก ID ที่ส่งเข้ามา
-            const heroEnv = ENVELOPES.find(e => e.id === userEnvelopeId) || ENVELOPES[0];
+            // ✅ Map userEnvelopeId (ที่ส่งมาจาก prop) เป็นสี
+            // userEnvelopeId จะเป็นค่าเช่น 'black' -> ได้สี '#CFD8DC'
+            const userColor = CUTE_COLOR_MAP[userEnvelopeId] || CUTE_COLOR_MAP['default'];
 
             const startX = Math.random() * 100 + 150;
             const heroBody = Bodies.circle(startX, -150, PHYSICS_RADIUS, {
                 restitution: 0.7, friction: 0.05, frictionAir: 0.05, density: 0.1,
             });
+
+            // ... (Physics Property ของ Hero เหมือนเดิม) ...
             Matter.Body.setAngularVelocity(heroBody, Math.random() * 0.2 - 0.1);
             Matter.Body.setVelocity(heroBody, { x: 0, y: 15 });
+
             Matter.World.add(engineRef.current.world, heroBody);
 
-            setBalls(prev => [...prev, { id: heroBody.id, isUser: true, envelopeId: heroEnv.id }]);
+            // ✅ ใส่สี userColor ที่ Map มาแล้ว
+            setBalls(prev => [...prev, { id: heroBody.id, isUser: true, color: userColor }]);
         }, 600);
 
         return () => {
@@ -218,7 +194,7 @@ export default function SuccessMailbox({
                 Matter.Engine.clear(engineRef.current);
             }
         };
-    }, [userEnvelopeId, ballCount]); // Re-run ถ้า userEnvelopeId เปลี่ยน
+    }, [userEnvelopeId, ballCount]); // Re-run ถ้า ID เปลี่ยน
 
     return (
         <div ref={containerRef} className="relative w-[400px] h-[500px]">
@@ -272,8 +248,8 @@ export default function SuccessMailbox({
                 style={{ borderRadius: '255px 15px 225px 15px / 15px 225px 15px 255px' }}>
 
                 {balls.map(ball => {
-                    // 🎨 ใช้ CUTE_COLOR_MAP
-                    const fillColor = CUTE_COLOR_MAP[ball.envelopeId] || CUTE_COLOR_MAP['default'];
+
+                    const fillColor = ball.color;
 
                     return (
                         <div

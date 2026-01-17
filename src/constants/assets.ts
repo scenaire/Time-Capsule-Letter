@@ -122,3 +122,31 @@ export const ENVELOPES = [
         envSecond: '#53211A'
     }
 ];
+
+export const CUTE_COLOR_MAP: Record<string, string> = {
+    // 🏳️ Basic
+    'white': '#F4F1EA',      // Warm White
+    'black': '#4A4A4A',      // Soft Charcoal
+
+    // 🌸 Pastels
+    'pink': '#FFC4D6',       // Soft Pink
+    'ink_teal': '#68A6B2',   // Muted Teal
+    'lemon': '#FDF0B3',      // Butter Cream
+    'grape_ash': '#9B8EA9',  // Dusty Purple
+
+    // 🌿 Nature
+    'mint': '#B6E6DE',
+    'butter': '#F8E4C5',
+    'burnt_matcha': '#8DA37D',
+
+    // ☁️ Airy & Pop
+    'sky': '#C5DFF8',
+    'electric_apricot': '#FFAD85', // Softened Apricot
+    'navy': '#5B7C99',       // Muted Navy
+
+    // 🍵 Cozy
+    'lavender': '#DCD3F3',
+    'matcha': '#C3DBC0',
+    'cocoa': '#8D6E63'       // Milk Chocolate
+};
+

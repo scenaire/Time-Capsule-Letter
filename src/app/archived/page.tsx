@@ -5,13 +5,16 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Home, ArrowRight } from "lucide-react";
-import SuccessMailbox from '@/components/mailbox/SuccessMailbox'; // Import ตัวที่เราเพิ่งสร้าง
+import SuccessMailbox from '@/components/mailbox/SuccessMailbox';
+import { DotPatternBackground } from '@/components/ui/DotPatternBackground';
+import { CUTE_COLOR_MAP } from '@/constants/assets';
 
 
 export function ArchivedContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const theme = searchParams.get('theme') || 'red'; // ถ้าไม่มีให้ Default เป็นแดง
+    const envelopeId = searchParams.get('envelope') || 'white';
+    const ballColor = CUTE_COLOR_MAP[envelopeId] || CUTE_COLOR_MAP['white'];
 
     return (
         // 1. พื้นหลัง: Warm Paper + Dot Pattern (เหมือน Landing Page เป๊ะๆ)
@@ -53,7 +56,7 @@ export function ArchivedContent() {
 
                 {/* 3. 🏺 The Hero Section: Success Mailbox */}
                 <div className="relative mb-10 scale-90 md:scale-100">
-                    <SuccessMailbox userEnvelopeId={theme} ballCount={20} />
+                    <SuccessMailbox userEnvelopeId={envelopeId} ballCount={20} />
                 </div>
 
                 {/* 4. Action Buttons (กลับหน้าแรก) */}
