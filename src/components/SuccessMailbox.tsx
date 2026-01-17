@@ -2,24 +2,58 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
-import { THEMES } from '@/styles/themes'; // หรือ path ที่คุณเก็บ themes.ts ไว้
+// 📦 เปลี่ยนจาก THEMES เป็น ENVELOPES จาก assets.ts
+import { ENVELOPES } from '@/constants/assets';
+
+// 🎨✨ Cute Color Map: ตารางแปลงสีจาก "ซองจริง" เป็น "สีลูกบอลสไตล์เกาหลี"
+// เลือกใช้โทนพาสเทลที่สดใส (High Brightness, Moderate Saturation)
+// 🎨✨ Cute Color Map: แปลงสีซองจริง -> สีลูกบอลสไตล์เกาหลี (Pastel & Milky)
+const CUTE_COLOR_MAP: Record<string, string> = {
+    // 1. Basic
+    'white': '#FFF9C4', // Creamy Yellow (นวลๆ เหมือนเนย)
+    'black': '#CFD8DC', // Blue Grey (เทาฟ้าอ่อนๆ ไม่ดำสนิท)
+
+    // 2. Rhythm Start (Pop & Soft)
+    'pink': '#F48FB1', // Pastel Rose (ชมพูนมเย็น)
+    'ink_teal': '#80DEEA', // Icy Cyan (ฟ้าเขียวน้ำแข็ง)
+    'lemon': '#FFF176', // Soft Lemon (เหลืองสดใส)
+    'grape_ash': '#CE93D8', // Taro Milk (ม่วงเผือก)
+
+    // 3. Earth & Nature (Warm)
+    'mint': '#A5D6A7', // Soft Mint (เขียวมินต์)
+    'butter': '#FFE0B2', // Peach Cream (ส้มนวลๆ)
+    'burnt_matcha': '#C5E1A5', // Light Sage (เขียวตองอ่อน)
+
+    // 4. Pop & Classic
+    'sky': '#90CAF9', // Baby Blue (ฟ้าเด็กน้อย)
+    'electric_apricot': '#FFAB91', // Soft Coral (ส้มพีช)
+    'navy': '#9FA8DA', // Blueberry Milk (น้ำเงินม่วงอ่อน)
+
+    // 5. Cozy Finish
+    'lavender': '#E1BEE7', // Pale Lavender (ม่วงอ่อนมาก)
+    'matcha': '#C8E6C9', // Green Tea Latte (เขียวชาเขียวนม)
+    'cocoa': '#BCAAA4', // Mocha Cream (น้ำตาลกาแฟนม)
+
+    // Fallback
+    'default': '#FFE082'
+};
 
 const BALL_RADIUS = 33;
 const PHYSICS_RADIUS = BALL_RADIUS - 1;
 const WALL_THICK = 60;
 
 const DOODLE_SHAPES = [
-    <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />,
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />,
-    <path d="M12 20a8 8 0 1 0-8-8 8 8 0 0 0 16 0 8 8 0 0 0-8-8" />,
-    <circle cx="12" cy="12" r="8" />,
-    <path d="M6 6L18 18M6 18L18 6" />
+    <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" key="1" />,
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" key="2" />,
+    <path d="M12 20a8 8 0 1 0-8-8 8 8 0 0 0 16 0 8 8 0 0 0-8-8" key="3" />,
+    <circle cx="12" cy="12" r="8" key="4" />,
+    <path d="M6 6L18 18M6 18L18 6" key="5" />
 ];
 
 type Ball = {
     id: number;
     isUser: boolean;
-    themeName: string;
+    envelopeId: string; // ✉️ เก็บ ID ของซองจดหมายแทน themeName
 };
 
 type DoodleItem = {
@@ -35,10 +69,10 @@ type DoodleItem = {
 };
 
 export default function SuccessMailbox({
-    userTheme = 'Carbon Fiber',
+    userEnvelopeId = 'white', // ✉️ รับ ID ซองจดหมายแทน userTheme
     ballCount = 40
 }: {
-    userTheme?: string;
+    userEnvelopeId?: string;
     ballCount?: number;
 }) {
     const engineRef = useRef<Matter.Engine | null>(null);
@@ -48,7 +82,7 @@ export default function SuccessMailbox({
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // ✨ Generate Random Doodles
+    // ✨ Generate Random Doodles (เหมือนเดิม)
     useEffect(() => {
         const newDoodles: DoodleItem[] = [];
         const count = 20;
@@ -120,14 +154,15 @@ export default function SuccessMailbox({
         const crowdBodies: Matter.Body[] = [];
 
         for (let i = 0; i < crowdCount; i++) {
-            const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
+            // 🎲 สุ่ม Envelope จากรายการทั้งหมด
+            const randomEnv = ENVELOPES[Math.floor(Math.random() * ENVELOPES.length)];
             const startX = Math.random() * 300 + 50;
             const startY = Math.random() * 300;
             const body = Bodies.circle(startX, startY, PHYSICS_RADIUS, {
                 restitution: 0.3, friction: 0.1, density: 0.04,
             });
             crowdBodies.push(body);
-            initialBalls.push({ id: body.id, isUser: false, themeName: randomTheme.name });
+            initialBalls.push({ id: body.id, isUser: false, envelopeId: randomEnv.id });
         }
         World.add(engine.world, crowdBodies);
 
@@ -161,8 +196,8 @@ export default function SuccessMailbox({
         timeoutRef.current = setTimeout(() => {
             if (!engineRef.current) return;
 
-            // ✅ แก้ไข 1: หา Theme แบบ Case-Insensitive (แก้ปัญหา juniper != Juniper)
-            const heroTheme = THEMES.find(t => t.name.toLowerCase() === (userTheme || '').toLowerCase()) || THEMES[0];
+            // 💌 หา Envelope ของ User จาก ID ที่ส่งเข้ามา
+            const heroEnv = ENVELOPES.find(e => e.id === userEnvelopeId) || ENVELOPES[0];
 
             const startX = Math.random() * 100 + 150;
             const heroBody = Bodies.circle(startX, -150, PHYSICS_RADIUS, {
@@ -172,7 +207,7 @@ export default function SuccessMailbox({
             Matter.Body.setVelocity(heroBody, { x: 0, y: 15 });
             Matter.World.add(engineRef.current.world, heroBody);
 
-            setBalls(prev => [...prev, { id: heroBody.id, isUser: true, themeName: heroTheme.name }]);
+            setBalls(prev => [...prev, { id: heroBody.id, isUser: true, envelopeId: heroEnv.id }]);
         }, 600);
 
         return () => {
@@ -183,7 +218,7 @@ export default function SuccessMailbox({
                 Matter.Engine.clear(engineRef.current);
             }
         };
-    }, [userTheme, ballCount]);
+    }, [userEnvelopeId, ballCount]); // Re-run ถ้า userEnvelopeId เปลี่ยน
 
     return (
         <div ref={containerRef} className="relative w-[400px] h-[500px]">
@@ -237,46 +272,31 @@ export default function SuccessMailbox({
                 style={{ borderRadius: '255px 15px 225px 15px / 15px 225px 15px 255px' }}>
 
                 {balls.map(ball => {
-                    // ✅ แก้ไข 2: หา ThemeObj แบบ Case-Insensitive เช่นกัน
-                    const themeObj = THEMES.find(t => t.name.toLowerCase() === ball.themeName.toLowerCase()) || THEMES[0];
-                    const ballColors = themeObj.ball || { muted: '#ccc', vivid: '#666' };
-                    const fillColor = ball.isUser ? ballColors.vivid : ballColors.muted;
+                    // 🎨 ใช้ CUTE_COLOR_MAP
+                    const fillColor = CUTE_COLOR_MAP[ball.envelopeId] || CUTE_COLOR_MAP['default'];
 
                     return (
                         <div
                             key={ball.id}
                             ref={el => { if (el) ballDomRefs.current.set(ball.id, el); }}
-                            className={`
-                                absolute top-0 left-0 w-[66px] h-[66px] rounded-full
-                                flex items-center justify-center
-                                ${ball.isUser ? 'z-50' : 'z-0'}
-                            `}
-                            style={{
-                                opacity: ball.isUser ? 1 : 0.8,
-                                transition: 'all 0.5s ease-out'
-                            }}
+                            className={`absolute top-0 left-0 w-[66px] h-[66px] rounded-full flex items-center justify-center ${ball.isUser ? 'z-50' : 'z-0'}`}
+                            style={{ opacity: ball.isUser ? 1 : 0.9, transition: 'all 0.5s ease-out' }}
                         >
                             {/* CROWD BALL */}
                             {!ball.isUser && (
                                 <>
-                                    <div
-                                        className="absolute inset-0 rounded-full"
+                                    <div className="absolute inset-0 rounded-full"
                                         style={{
+                                            // ปรับลายเส้นให้ดูซอฟต์ลง
                                             backgroundImage: `repeating-linear-gradient(45deg, ${fillColor}, ${fillColor} 2px, transparent 2px, transparent 6px)`,
                                             transform: 'scale(0.75)',
-                                            filter: 'blur(1px)',
+                                            filter: 'blur(0.5px)'
                                         }}
                                     />
-                                    <div
-                                        className="absolute inset-0 rounded-full"
+                                    <div className="absolute inset-0 rounded-full"
                                         style={{
-                                            border: '1px solid rgba(255, 255, 255, 0.6)',
-                                            boxShadow: `
-                                                inset 0 0 15px rgba(255,255,255,0.5),
-                                                inset 2px -4px 6px ${ballColors.muted}66, 
-                                                0 8px 15px rgba(0,0,0,0.05)
-                                            `,
-                                            backdropFilter: 'none',
+                                            border: '2px solid rgba(255, 255, 255, 0.8)',
+                                            boxShadow: `inset 0 0 15px rgba(255,255,255,0.6), 0 4px 8px rgba(0,0,0,0.05)`
                                         }}
                                     />
                                 </>
@@ -285,21 +305,19 @@ export default function SuccessMailbox({
                             {/* HERO BALL */}
                             {ball.isUser && (
                                 <>
-                                    <div
-                                        className="w-[85%] h-[85%] rounded-full animate-scribble"
+                                    <div className="w-[85%] h-[85%] rounded-full animate-scribble"
                                         style={{
                                             backgroundImage: `repeating-linear-gradient(45deg, ${fillColor}, ${fillColor} 2px, transparent 2px, transparent 6px)`,
                                             border: 'none',
-                                            borderRadius: '50% 45% 55% 40% / 40% 60% 50% 55%',
+                                            borderRadius: '50% 45% 55% 40% / 40% 60% 50% 55%'
                                         }}
                                     />
-                                    <div
-                                        className="absolute inset-0 rounded-full border-[3px] pointer-events-none animate-wiggle-slow"
+                                    <div className="absolute inset-0 rounded-full border-[3px] pointer-events-none animate-wiggle-slow"
                                         style={{
                                             transform: 'rotate(-3deg) scale(1.05)',
                                             borderRadius: '55% 40% 50% 60% / 50% 60% 40% 55%',
                                             borderColor: '#2d2d2d',
-                                            boxShadow: `2px 4px 12px ${fillColor}44`
+                                            boxShadow: `2px 4px 12px ${fillColor}66`
                                         }}
                                     />
                                 </>

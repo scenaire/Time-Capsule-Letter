@@ -53,6 +53,14 @@
   --color-snowdrop: #F4E8D4;
   --color-azure-blue: #8DB9E8;
 
+  --color-soft-lavender: #D2B3DB;
+  --color-russian-violet: #4B0073;
+  --color-magnolia-violet: #E6E1FF;
+
+  --color-safety-blue: #2F3A8F;
+  --color-salmon: #E06A5A;
+  --color-light-pink: #FEECE9;
+
   /* ฟอนต์ */
   --font-pani: var(--font-pani);
   --font-ibm-plex: var(--font-ibm-plex);

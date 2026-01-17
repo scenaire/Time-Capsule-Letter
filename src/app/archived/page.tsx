@@ -53,7 +53,7 @@ export function ArchivedContent() {
 
                 {/* 3. 🏺 The Hero Section: Success Mailbox */}
                 <div className="relative mb-10 scale-90 md:scale-100">
-                    <SuccessMailbox userTheme={theme} ballCount={20} />
+                    <SuccessMailbox userEnvelopeId={theme} ballCount={20} />
                 </div>
 
                 {/* 4. Action Buttons (กลับหน้าแรก) */}

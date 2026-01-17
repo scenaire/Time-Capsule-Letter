@@ -45,7 +45,7 @@ export const UndoButton = ({ onClick }: { onClick: () => void }) => {
             onClick={onClick}
             // ปรับปุ่ม Undo ให้เข้าธีมเล็กน้อย แต่ยังคงความ Minimal
             className="group relative p-3 bg-white wobbly-border border-2 border-[#000000] hard-shadow 
-                hover:bg-[#2d5da1] hover:text-white hover:border-[#2d5da1]
+                hover:bg-[#2d5da1] hover:text-white hover:border-[#2d5da1] opacity-100
                 hover:rotate-12 active:scale-95 transition-all cursor-pointer text-[#000000]"
         >
             <ButtonTooltip text="กลับไปแก้ไขข้อความ" />

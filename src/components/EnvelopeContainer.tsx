@@ -2,21 +2,19 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Stamp, Mail, Send } from 'lucide-react';
+import { Mail, Send } from 'lucide-react';
 import { SEALS } from '@/constants/assets';
-import { EnvelopeBack, EnvelopeFront, EnvelopeFlap, EnvelopeSecond, EnvelopeFlapClose } from '@/components/EnvelopeSVGs'; // 👈 เพิ่ม EnvelopeFlapClose
+import { EnvelopeBack, EnvelopeFront, EnvelopeFlap, EnvelopeSecond } from '@/components/EnvelopeSVGs';
 import { SealSelector } from '@/components/SealSelector';
 import { ActionButton, UndoButton } from '@/components/ActionButtons';
-import { EnvelopeShadow } from '@/components/EnvelopeSVGs';
 
-// 🔴 FIX: แยก Type ออกเป็น 2 ส่วนให้ชัดเจน
 interface EnvelopeContainerProps {
-    envelope: { // รับค่าสีซอง
+    envelope: {
         env: string;
         envSecond: string;
         envFront: string;
     };
-    theme: { // รับค่าสีกระดาษ
+    theme: {
         bg: string;
         text: string;
     };
@@ -39,8 +37,8 @@ interface EnvelopeContainerProps {
 }
 
 export const EnvelopeContainer = ({
-    envelope, // 👈 รับ envelope มา
-    theme,    // 👈 รับ theme มา
+    envelope,
+    theme,
     font,
     postcard,
     foldStep,
@@ -56,65 +54,96 @@ export const EnvelopeContainer = ({
         <div className="relative w-full flex flex-col items-center justify-center">
             <div className="relative w-full max-w-lg aspect-[1001/1083] overflow-hidden rounded-b-[40px]">
 
-                {/* ใช้ envelope.env สำหรับสีซอง */}
                 <EnvelopeBack color={envelope.env} className="absolute inset-0 w-full h-full z-0 pointer-events-none" />
 
                 <div className={`absolute inset-0 w-full h-full z-0 pointer-events-none transition-opacity duration-0 ${foldStep >= 2 ? 'opacity-0' : 'opacity-100'}`}>
                     <EnvelopeFlap color={envelope.env} className="absolute inset-0 w-full h-full" />
                 </div>
 
-                {/* ใช้ theme.bg และ theme.text สำหรับกระดาษจดหมาย */}
+                {/* 📝 ส่วนของตัวจดหมาย (Letter) - Elastic Layout */}
                 <motion.div
-                    className={`absolute left-[10%] right-[10%] z-10 ${theme.bg} ${theme.text} shadow-sm flex flex-col items-start`}
-                    initial={{ top: "12%", height: "85%" }}
+                    // ✨ Layout: ใช้ Flex Column เพื่อจัดเรียง Header -> Body -> Footer
+                    className={`absolute left-[10%] right-[10%] z-10 flex flex-col items-start ${theme.bg} ${theme.text} border-[2px] border-[#18181b]`}
+
+                    // 🚀 Elastic Height Logic:
+                    // 1. ลบ height: "85%" ออกจาก initial
+                    // 2. ใช้ top เพื่อดันตำแหน่งตอนพับ (Slide Down Animation)
+                    initial={{ top: "12%" }}
                     animate={{ top: foldStep >= 1 ? "50%" : "12%" }}
                     transition={{ duration: 2.0, ease: [0.42, 0, 0.58, 1] }}
+
+                    style={{
+                        // ✨ Constraints:
+                        maxHeight: '85%', // สูงสุดไม่เกิน 85% ของซอง (ถ้าเกินจะ Scroll)
+                        minHeight: '40%', // ต่ำสุด 40% (กันสั้นเกินไปจนดูไม่ดี)
+                        height: 'auto',   // ปล่อยให้สูงตามเนื้อหาจริง
+
+                        boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.15)',
+                        borderRadius: '2px'
+                    }}
                 >
-                    {/* ================= HEADER ================= */}
-                    <div
-                        className="px-10 md:px-14 pt-12 pb-2 mb-2 text-center opacity-70 shrink-0"
-                    >
-                        <h2
-                            className={`font-bold text-xs tracking-widest uppercase ${font.envelopeSenderText}`}
-                            style={{ fontFamily: `var(--${font.id})` }}
-                        >
-                            To the One I Haven’t Met Yet.
-                        </h2>
-                    </div>
+                    {/* 🎨 Texture เส้นขีดเขียน (แบบที่ 3: Inner Wobbly Frame) */}
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-10" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <path
+                            d="M 5 5 Q 50 4 95 6 Q 96 50 94 95 Q 50 96 6 94 Q 4 50 5 5 Z"
+                            stroke="currentColor"
+                            strokeWidth="0.3"
+                            fill="none"
+                            strokeDasharray="4 2"
+                        />
+                    </svg>
 
-                    {/* ================= BODY ================= */}
-                    <div className="flex-1 px-10 md:px-14 py-4 overflow-hidden">
-                        <p
-                            className={`whitespace-pre-wrap leading-relaxed ${font.envelopeText} opacity-85 break-words`}
-                        >
-                            {postcard.message}
-                        </p>
-                    </div>
+                    {/* ✨ Content Wrapper: เอา h-full ออก เพื่อให้ Flex container หดตามเนื้อหาได้ */}
+                    <div className="relative z-10 w-full flex flex-col h-full">
 
-                    {/* ================= FOOTER ================= */}
-                    <div
-                        className="px-10 md:px-14 pb-12 pt-4 flex flex-col items-end shrink-0 opacity-80"
-                    >
-                        <span
-                            className={`font-bold text-xs tracking-widest uppercase mb-1 ${font.envelopeSenderText}`}
-                            style={{ fontFamily: `var(--${font.id})` }}
-                        >
-                            A Letter From…
-                        </span>
-
-                        <div className="relative w-full max-w-[200px] text-right">
-                            <span
-                                className={`${font.envelopeSenderText} font-bold`}
+                        {/* ================= HEADER (Flex-none: ไม่ยืดหด) ================= */}
+                        <div className="px-10 md:px-14 pt-10 pb-2 mb-2 text-center opacity-70 shrink-0">
+                            <h2
+                                className={`font-bold text-xs tracking-widest uppercase ${font.envelopeSenderText}`}
+                                style={{ fontFamily: `var(--${font.id})` }}
                             >
-                                {postcard.sender}
+                                To the One I Haven’t Met Yet.
+                            </h2>
+                        </div>
+
+                        {/* ================= BODY (Flex-1: ยืดหยุ่น + Scrollable) ================= */}
+                        {/* - flex-1: ให้กินพื้นที่ที่เหลือ
+                           - overflow-y-auto: ถ้าเนื้อหายาวเกินพื้นที่ที่เหลือ (จนชน max-height) ให้ scroll ได้
+                           - no-scrollbar: ซ่อน Scrollbar เพื่อความสวยงาม (ต้องมี class นี้ใน CSS หรือ Tailwind config)
+                        */}
+                        <div className="flex-1 px-10 md:px-14 py-2 overflow-y-auto no-scrollbar min-h-0">
+                            <p
+                                className={`whitespace-pre-wrap leading-relaxed ${font.envelopeText} opacity-85 break-words`}
+                                style={{ fontFamily: `var(--${font.id})` }}
+                            >
+                                {postcard.message}
+                            </p>
+                        </div>
+
+                        {/* ================= FOOTER (Flex-none: ติดท้ายเสมอ) ================= */}
+                        {/* - pb-10: เผื่อระยะขอบล่างให้สวยงาม
+                           - mt-auto: ดันตัวเองลงข้างล่างสุดเสมอ (ในกรณีที่ min-height ทำงาน)
+                        */}
+                        <div className="px-10 md:px-14 pb-10 pt-4 flex flex-col items-end shrink-0 opacity-80 mt-auto">
+                            <span
+                                className={`font-bold text-xs tracking-widest uppercase mb-1 ${font.envelopeSenderText}`}
+                                style={{ fontFamily: `var(--${font.id})` }}
+                            >
+                                A Letter From…
                             </span>
+
+                            {/* ✨ แก้ไข 1: ใช้ inline-block เพื่อให้กล่องกว้างเท่าข้อความพอดี (เส้นจะไม่ยาวเกิน) */}
+                            <div className="relative inline-block text-right max-w-full">
+                                <span className={`${font.envelopeSenderText} font-bold`} style={{ fontFamily: `var(--${font.id})` }}>
+                                    {postcard.sender}
+                                </span>
+
+
+                            </div>
                         </div>
                     </div>
-
-
                 </motion.div>
 
-                {/* ใช้ envelope.xxx สำหรับเลเยอร์ซองที่เหลือ */}
                 <EnvelopeSecond secondColor={envelope.envSecond} className="absolute inset-0 w-full h-full z-20 pointer-events-none" />
                 <EnvelopeFront frontColor={envelope.envFront} className="absolute inset-0 w-full h-full z-30 pointer-events-none" />
 
@@ -159,12 +188,7 @@ export const EnvelopeContainer = ({
             </div>
 
             {foldStep === 0 && (
-                <div className={`
-          /* Mobile: ลอยอยู่ด้านล่าง ตรงกลาง, z-index สูงๆ */
-          fixed bottom-[20%] left-0 w-full flex items-center justify-center gap-4 z-50 pointer-events-auto
-      `}>
-
-                    {/* 4. เพิ่มปุ่มเปลี่ยนซอง (ใช้ ActionButton ตัวเดิมแต่เปลี่ยนไอคอน) */}
+                <div className="fixed bottom-[20%] left-0 w-full flex items-center justify-center gap-4 z-50 pointer-events-auto">
                     <ActionButton
                         onClick={onCycleEnvelope}
                         icon={<Mail size={24} />}
