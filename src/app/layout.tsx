@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { IBM_Plex_Sans_Thai, Anuphan, Srisakdi } from "next/font/google";
+import { IBM_Plex_Sans_Thai, Anuphan, Google_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/common/Providers";
 
@@ -33,10 +33,17 @@ const fontAnuphan = Anuphan({
   variable: "--font-anuphan", // กำหนดชื่อตัวแปร
 });
 
-const fontChulaNarak = localFont({
-  src: '../../public/fonts/ChulaNarakBold.ttf',
-  variable: '--font-chula-narak',
+const fontGoogleSans = Google_Sans({
+  subsets: ["thai", "latin"],
+  weight: ["400", "700"],
+  variable: "--font-google-sans", // กำหนดชื่อตัวแปร
+});
+
+const fontOumInEveryDay = localFont({
+  src: '../../public/fonts/oumineveryday.ttf',
+  variable: '--font-oumineveryday',
 })
+
 
 // 2. ตั้งค่าข้อมูลพื้นฐานของเว็บไซต์ (Metadata)
 export const metadata: Metadata = {
@@ -51,10 +58,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`
         ${fontPani.variable}  
         ${fontADELIA.variable}
-        ${fontJaoAugust.variable}
         ${fontAnuphan.variable}
         ${fontIbmPlex.variable}
-        ${fontChulaNarak.variable}
+        ${fontGoogleSans.variable}
+        ${fontOumInEveryDay.variable}
         antialiased
       `}>
         <Providers>{children}</Providers>

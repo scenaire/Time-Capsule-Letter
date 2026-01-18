@@ -61,7 +61,7 @@ export const THEMES = [
         ball: { muted: '#fca5a5', vivid: '#9f1239' }
     },
     {
-        name: 'Cherry Riot',
+        name: 'Wakashi',
         bg: 'bg-pale-pink',
         text: 'text-scarlet-pop',
         placeholder: 'placeholder:text-scarlet-pop/40',

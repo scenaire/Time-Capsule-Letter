@@ -9,24 +9,14 @@ export const FONTS = [
         envelopeSenderText: 'text-[6px]'
     },
     {
-        id: 'font-chula-narak',
-        name: 'Chula Narak',
-        size: 'text-[22px] md:text-[26px]',
-        senderSize: 'text-[24px]',
-        senderText: 'text-[18px]',
-        envelopeText: 'text-[18px]',
-        envelopeSenderText: 'text-[14px]'
+        id: 'font-google-sans',
+        name: 'Google Sans',
+        size: 'text-[14px] md:text-[18px]',
+        senderSize: 'text-[16px]',
+        senderText: 'text-[10px]',
+        envelopeText: 'text-[10px]',
+        envelopeSenderText: 'text-[6px]'
     },
-    {
-        id: 'font-jao-august',
-        name: 'Jao August',
-        size: 'text-[16px] md:text-[20px]',
-        senderSize: 'text-[20px]',
-        senderText: 'text-[14px]',
-        envelopeText: 'text-[12px]',
-        envelopeSenderText: 'text-[10px]'
-    },
-
     {
         id: 'font-pani',
         name: 'PANI New Year',
@@ -34,6 +24,15 @@ export const FONTS = [
         senderSize: 'text-[20px]',
         senderText: 'text-[14px]',
         envelopeText: 'text-[14px]',
+        envelopeSenderText: 'text-[10px]'
+    },
+    {
+        id: 'font-oumineveryday',
+        name: 'Oum In Every Day',
+        size: 'text-[14px] md:text-[18px]',
+        senderSize: 'text-[16px]',
+        senderText: 'text-[10px]',
+        envelopeText: 'text-[12px]',
         envelopeSenderText: 'text-[10px]'
     },
 ];

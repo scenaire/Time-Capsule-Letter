@@ -42,7 +42,7 @@
   --color-tangy-orange: #FD5A01;
   --color-honey-beige: #EED696;
   --color-pine-tree: #23330E;
-  --color-dreamy-blue: #689EFC;
+  --color-dreamy-blue: #4D8EFF;
   --color-vanilla-milk: #FFF2D0;
   --color-lemon-glow: #FFE278;
   --color-lemon-tart: #E6D389;
@@ -67,7 +67,8 @@
   --font-adelia: var(--font-adelia);
   --font-anuphan: var(--font-anuphan);
   --font-jao-august: var(--font-jao-august);
-  --font-chula-narak: var(--font-chula-narak);
+  --font-google-sans: var(--font-google-sans);
+  --font-oumineveryday: var(--font-oumineveryday);
 }
 
 /* --- 3. Hand-Drawn Utility Classes --- */

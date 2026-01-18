@@ -4,6 +4,15 @@ import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from "next/navigation";
 
+// Tiptap Imports ✨
+import { useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
+import Underline from '@tiptap/extension-underline';
+import Highlight from '@tiptap/extension-highlight';
+import { TextStyle } from '@tiptap/extension-text-style';
+import TextAlign from '@tiptap/extension-text-align';
+
 // Hooks
 import { usePostcardForm } from '@/hooks/usePostcardForm';
 import { useEnvelopeAnimation } from '@/hooks/useEnvelopeAnimation';
@@ -11,13 +20,13 @@ import { useEnvelopeAnimation } from '@/hooks/useEnvelopeAnimation';
 // Components
 import LoginButton from '@/components/common/LoginButton';
 import { EnvelopeContainer } from '@/components/envelope/EnvelopeContainer';
-import { LetterEditor } from '@/components/letter/LetterEditor';
+import { LetterEditor } from '@/components/letter/LetterEditor'; // ✅ อันใหม่ที่เราเพิ่งแก้
 import { ControlPanel } from '@/components/letter/ControlPanel';
 
 export default function TimeCapsulePage() {
   const router = useRouter();
 
-  // 1. Data Logic (Sender, Message, Theme, Font)
+  // 1. Data Logic
   const {
     postcard,
     updateField,
@@ -29,7 +38,7 @@ export default function TimeCapsulePage() {
     currentEnvelope
   } = usePostcardForm();
 
-  // 2. Animation Logic (Folding, Sealing)
+  // 2. Animation Logic
   const {
     isFolding,
     foldStep,
@@ -44,13 +53,50 @@ export default function TimeCapsulePage() {
 
   // 3. UI Local State
   const [isTyping, setIsTyping] = useState(false);
+  const [, setForceUpdate] = useState(0);
+
+  // ✨ 4. Setup Tiptap Editor
+  // ✨ Setup Editor
+  const editor = useEditor({
+    immediatelyRender: false, // ✅ จุดสำคัญ! แก้ Error SSR ตรงนี้
+    extensions: [
+      StarterKit,
+      Underline,
+      TextStyle,
+      Highlight.configure({ multicolor: true }),
+      Placeholder.configure({
+        placeholder: 'เขียนถึงตัวคุณในปี 2027...',
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+        alignments: ['center', 'left'], // justify คือ Thai Distributed
+      }),
+    ],
+    content: postcard.message,
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose focus:outline-none w-full max-w-none',
+      },
+    },
+    onUpdate: ({ editor }) => {
+      updateField('message', editor.getHTML());
+    },
+
+    onSelectionUpdate: () => {
+      setForceUpdate((prev) => prev + 1);
+    },
+    // ✨ และตรงนี้: เพื่อความชัวร์ (ครอบคลุมการกด Bold/Italic แล้ว state เปลี่ยน)
+    onTransaction: () => {
+      setForceUpdate((prev) => prev + 1);
+    }
+  });
 
   // Effect: Redirect after sending
   useEffect(() => {
     if (isSent) {
       const envId = currentEnvelope.id;
       const timeout = setTimeout(() => {
-        router.push(`/archived?envelope=${envId}`);
+        router.push(`/archived?theme=${envId}`);
       }, 500);
       return () => clearTimeout(timeout);
     }
@@ -76,12 +122,12 @@ export default function TimeCapsulePage() {
             key="letter-container"
             animate={{ scale: isFolding ? 0.9 : 1, opacity: 1 }}
             transition={{ duration: 0.8 }}
-            className={`relative w-full max-w-xl h-fit max-h-[70vh] flex flex-col transition-all duration-1000 
+            className={`relative w-full max-w-xl h-fit max-h-[85vh] md:max-h-[80vh] flex flex-col transition-all duration-1000 
                             ${isFolding ? 'bg-transparent shadow-none' : `${currentTheme.bg} shadow-2xl postage-edge`} 
                             ${currentTheme.text}`}
             style={{ transformStyle: 'preserve-3d', fontFamily: `var(--${currentFont.id})` }}
           >
-            {/* 3D Envelope Animation Layer */}
+            {/* 3D Envelope Layer */}
             {isFolding && (
               <EnvelopeContainer
                 envelope={currentEnvelope}
@@ -100,6 +146,7 @@ export default function TimeCapsulePage() {
 
             {/* Editor Layer */}
             <LetterEditor
+              editor={editor}
               postcard={postcard}
               theme={currentTheme}
               font={currentFont}
@@ -111,7 +158,7 @@ export default function TimeCapsulePage() {
 
           </motion.div>
         ) : (
-          // Success State (Sealing...)
+          // Success State
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -122,7 +169,7 @@ export default function TimeCapsulePage() {
         )}
       </AnimatePresence>
 
-      {/* Control Panel (Hide when typing or folding) */}
+      {/* Control Panel (ด้านล่างสุด) */}
       {!isSent && !isFolding && (
         <div
           className={`absolute bottom-4 left-0 right-0 z-50 flex justify-center pointer-events-none transition-transform duration-300 
@@ -132,7 +179,8 @@ export default function TimeCapsulePage() {
             <ControlPanel
               theme={currentTheme}
               font={currentFont}
-              isMessageEmpty={!postcard.message}
+              // เช็คข้อความว่างจาก Editor
+              isMessageEmpty={!editor || editor.isEmpty}
               onCycleFont={cycleFont}
               onCycleTheme={cycleTheme}
               onStartFolding={startFolding}
