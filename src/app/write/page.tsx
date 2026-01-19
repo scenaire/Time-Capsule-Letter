@@ -147,7 +147,7 @@ export default function TimeCapsulePage() {
                 <AlertCircle size={48} />
               </div>
               <h2 className="font-adelia text-2xl md:text-3xl text-[#2d2d2d] mb-4">
-                Found a Lost Page?
+                Found a Lost Page
               </h2>
               <p className="font-ibm-plex text-[#2d2d2d]/70 mb-8 leading-relaxed">
                 เราเจอข้อความที่คุณเขียนค้างไว้ในเครื่องนี้ (Local Draft)

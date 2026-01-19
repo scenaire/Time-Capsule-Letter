@@ -165,3 +165,55 @@ export const CUTE_COLOR_MAP: Record<string, string> = {
     'cocoa': '#8D6E63'       // Milk Chocolate
 };
 
+export const STREAM_OVERLAY_MAP: Record<string, string> = {
+    // 1️⃣ fixed
+    'Carbon Fiber': '#6EF3FF',        // Neon Ice Blue — tech, คม, สะอาดมาก
+
+    // 🎭 dreamy → dark
+    'Daydream Tide': '#4DF0FF',       // Neon Sky — ฟ้าใสแบบฝัน แต่แรงพอขึ้นสตรีม
+    'Velvet Aubergine': '#C77DFF',    // Neon Amethyst — jewel glow บนพื้นมืด สวยมาก
+
+    // 🌿 earthy → 🍊 pop
+    'Juniper': '#39FF14',             // Toxic Green — ธรรมชาติแต่ไซเบอร์ เด้งสุด
+    'Tangerine Peel': '#FF6A00',      // Neon Tangerine — ส้มระเบิด พลังสูง
+
+    // 🍷 mature → 💗 playful
+    'Red Wine': '#FF2F92',            // Neon Rose — หรูแต่เร้าอารมณ์
+    'Cherry Riot': '#FF2FD6',         // Hot Pink Neon — idol / pop ชัดมาก
+    'Smoked Salmon': '#FF5A3D',       // Neon Coral — อุ่น สด ไม่กลืนพื้น
+
+    // ☕ cozy → 👑 royal
+    'Classic Cocoa': '#FFD84D',       // Neon Honey — อบอุ่นแต่สว่าง หรู
+    'Blue Sovereign': '#00F0FF',      // Electric Cyan — ราชัน + futuristic
+
+    // 🍓 light → 💜 soft
+    'Vanilla Berry': '#FF2F4F',       // Berry Neon — หวานแต่แรง
+    'Lavender Haze': '#C77DFF'        // Neon Lilac — fantasy glow นุ่มแต่ชัด
+};
+
+export const ENVELOPE_OVERLAY_MAP: Record<string, string> = {
+    // 1–2 fixed
+    'white': '#FFFFFF',          // Ivory Glow — ขาวเรือง สะอาด
+    'black': '#2B2B2B',          // Charcoal Glow — ดำเรือง ไม่เทา
+
+    // light → dark → pop → soft
+    'pink': '#FF5FA2',           // Cherry Neon — ชมพูเดิมแต่สว่างขึ้น
+    'ink_teal': '#00B7C2',       // Ink Teal Neon — teal เดิม เรืองน้ำหมึก
+    'lemon': '#FFF04A',          // Lemon Neon — เหลืองครีม → lemon glow
+    'grape_ash': '#9B6BFF',      // Grape Neon — ม่วงเทา → jewel violet
+
+    // cool → warm → dark earth
+    'mint': '#3FFFD9',           // Mint Neon — mint เดิม แต่ใสจัด
+    'butter': '#FFD27A',         // Butter Glow — ครีมอุ่น เรืองนม
+    'burnt_matcha': '#7CFF3A',   // Matcha Neon — เขียวเข้ม → เขียวเรือง
+
+    // airy → bold pop → classic
+    'sky': '#6EC9FF',            // Sky Neon — ฟ้า baby sky แต่สด
+    'electric_apricot': '#FF8A2A', // Apricot Neon — ส้มเดิม เรืองหวาน
+    'navy': '#3F5BFF',           // Navy Neon — น้ำเงินเข้ม เรือง royal
+
+    // finish cozy & calm
+    'lavender': '#C58BFF',       // Lavender Neon — ม่วงนุ่มเรือง
+    'matcha': '#7DFF9A',         // Matcha Fresh — เขียวนม เรืองใส
+    'cocoa': '#FF9A3A',          // Cocoa Glow — น้ำตาล → amber glow
+};
