@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from "next/navigation";
+import { AlertCircle, FileText, Database } from 'lucide-react'; // Icons
 
 // Tiptap Imports ✨
 import { useEditor } from '@tiptap/react';
@@ -13,63 +14,52 @@ import Highlight from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
 import TextAlign from '@tiptap/extension-text-align';
 
-// Hooks
-import { usePostcardForm } from '@/hooks/usePostcardForm';
-import { useEnvelopeAnimation } from '@/hooks/useEnvelopeAnimation';
+// Hooks (ใช้ตัวใหม่)
+import { useLetterLogic } from '@/hooks/useLetterLogic';
 
 // Components
 import LoginButton from '@/components/common/LoginButton';
 import { EnvelopeContainer } from '@/components/envelope/EnvelopeContainer';
-import { LetterEditor } from '@/components/letter/LetterEditor'; // ✅ อันใหม่ที่เราเพิ่งแก้
+import { LetterEditor } from '@/components/letter/LetterEditor';
 import { ControlPanel } from '@/components/letter/ControlPanel';
+import { SubmissionError } from '@/components/feedback/SubmissionError';
 
 export default function TimeCapsulePage() {
   const router = useRouter();
 
-  // 1. Data Logic
-  const {
-    postcard,
-    updateField,
-    cycleFont,
-    cycleTheme,
-    cycleEnvelope,
-    currentTheme,
-    currentFont,
-    currentEnvelope
-  } = usePostcardForm();
+  // 1. Data & Animation Logic (รวมร่างใน Hook เดียวแล้ว)
+  const { state, actions, derived } = useLetterLogic();
 
-  // 2. Animation Logic
   const {
-    isFolding,
-    foldStep,
-    isReadyToSeal,
-    selectedSeal,
-    isSent,
-    startFolding,
-    cancelFolding,
-    handleCloseEnvelope,
-    handleApplySeal
-  } = useEnvelopeAnimation();
+    postcard, isFolding, foldStep, readyToSeal, selectedSeal,
+    isSent, isLoading, isError, isConflict
+  } = state;
 
-  // 3. UI Local State
+  const { currentTheme, currentFont, currentEnvelope } = derived;
+
+  // UI Local State
   const [isTyping, setIsTyping] = useState(false);
-  const [, setForceUpdate] = useState(0);
 
-  // ✨ 4. Setup Tiptap Editor
-  // ✨ Setup Editor
+  // ✨ 2. Setup Tiptap Editor
   const editor = useEditor({
-    immediatelyRender: false, // ✅ จุดสำคัญ! แก้ Error SSR ตรงนี้
+    immediatelyRender: false, // ✅ กัน Error SSR
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        paragraph: { HTMLAttributes: { class: 'leading-relaxed mb-4' } },
+        heading: { levels: [1, 2, 3] },
+        dropcursor: { color: '#555', width: 2 },
+        gapcursor: false,
+      }),
       Underline,
       TextStyle,
       Highlight.configure({ multicolor: true }),
       Placeholder.configure({
         placeholder: 'เขียนถึงตัวคุณในปี 2027...',
+        emptyEditorClass: 'is-editor-empty',
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
-        alignments: ['center', 'left'], // justify คือ Thai Distributed
+        alignments: ['center', 'left'],
       }),
     ],
     content: postcard.message,
@@ -79,24 +69,25 @@ export default function TimeCapsulePage() {
       },
     },
     onUpdate: ({ editor }) => {
-      updateField('message', editor.getHTML());
+      actions.updatePostcard('message', editor.getHTML());
     },
-
-    onSelectionUpdate: () => {
-      setForceUpdate((prev) => prev + 1);
-    },
-    // ✨ และตรงนี้: เพื่อความชัวร์ (ครอบคลุมการกด Bold/Italic แล้ว state เปลี่ยน)
-    onTransaction: () => {
-      setForceUpdate((prev) => prev + 1);
-    }
   });
+
+  // ✨ Sync DB Content to Editor (เมื่อโหลดเสร็จ หรือเปลี่ยน Draft)
+  useEffect(() => {
+    if (editor && postcard.message && !editor.isFocused) {
+      if (editor.getHTML() !== postcard.message) {
+        editor.commands.setContent(postcard.message);
+      }
+    }
+  }, [isLoading, postcard.message, editor, isConflict]); // เพิ่ม isConflict เพื่อให้มันไม่อัปเดตตอนกำลังเลือก
 
   // Effect: Redirect after sending
   useEffect(() => {
     if (isSent) {
       const envId = currentEnvelope.id;
       const timeout = setTimeout(() => {
-        router.push(`/archived?envelope=${envId}`);
+        router.push(`/archived?envelope=${envId}`); // ✅ ไปหน้า Archive
       }, 500);
       return () => clearTimeout(timeout);
     }
@@ -104,6 +95,17 @@ export default function TimeCapsulePage() {
 
   // Styles
   const dotColor = currentTheme.isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
+
+  // Loading View
+  if (isLoading) {
+    return (
+      <div className={`min-h-screen w-full flex items-center justify-center ${currentTheme.bg} ${currentTheme.text}`}>
+        <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+          Loading memories...
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <main
@@ -115,6 +117,68 @@ export default function TimeCapsulePage() {
       }}
     >
       <LoginButton />
+
+      {/* ✅ Error Overlay */}
+      <AnimatePresence>
+        {isError && (
+          <SubmissionError
+            onRetry={() => actions.resetError()}
+            onClose={() => actions.resetError()}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ✅ Draft Conflict Modal (Handrawn Style) */}
+      <AnimatePresence>
+        {isConflict && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
+              className="bg-[#fdfbf7] p-8 max-w-md w-full text-center relative shadow-2xl"
+              style={{
+                borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
+                border: "3px solid #2d2d2d"
+              }}
+            >
+              <div className="flex justify-center mb-4 text-[#ffcc00]">
+                <AlertCircle size={48} />
+              </div>
+              <h2 className="font-adelia text-2xl md:text-3xl text-[#2d2d2d] mb-4">
+                Found a Lost Page?
+              </h2>
+              <p className="font-ibm-plex text-[#2d2d2d]/70 mb-8 leading-relaxed">
+                เราเจอข้อความที่คุณเขียนค้างไว้ในเครื่องนี้ (Local Draft)
+                แต่มันไม่ตรงกับข้อมูลล่าสุดที่คุณเคยบันทึกไว้ (Cloud)
+                <br /><br />
+                <span className="font-bold text-[#2d2d2d]">คุณอยากใช้ฉบับไหน?</span>
+              </p>
+
+              <div className="flex flex-col gap-3">
+                {/* Use Local Draft */}
+                <button
+                  onClick={() => actions.resolveConflict(true)}
+                  className="group flex items-center justify-center gap-3 px-6 py-3 bg-[#2d2d2d] text-white font-bold rounded-lg hover:scale-[1.02] transition-transform font-ibm-plex"
+                >
+                  <FileText size={20} />
+                  <span>ใช้ฉบับในเครื่องนี้ (Local Draft)</span>
+                </button>
+
+                {/* Use Database (Discard Local) */}
+                <button
+                  onClick={() => actions.resolveConflict(false)}
+                  className="group flex items-center justify-center gap-3 px-6 py-3 bg-transparent border-2 border-[#2d2d2d]/20 text-[#2d2d2d] font-bold rounded-lg hover:bg-[#2d2d2d]/5 transition-colors font-ibm-plex"
+                >
+                  <Database size={20} />
+                  <span>ใช้ฉบับล่าสุดจาก Cloud</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         {!isSent ? (
@@ -136,11 +200,11 @@ export default function TimeCapsulePage() {
                 postcard={postcard}
                 foldStep={foldStep}
                 selectedSeal={selectedSeal}
-                readyToSeal={isReadyToSeal}
-                onCloseEnvelope={handleCloseEnvelope}
-                onApplySeal={handleApplySeal}
-                onCancel={cancelFolding}
-                onCycleEnvelope={cycleEnvelope}
+                readyToSeal={readyToSeal}
+                onCloseEnvelope={actions.handleCloseEnvelope}
+                onApplySeal={actions.handleApplySeal} // ✅ ยิงเข้า DB
+                onCancel={actions.cancelFolding}
+                onCycleEnvelope={actions.cycleEnvelope}
               />
             )}
 
@@ -151,7 +215,7 @@ export default function TimeCapsulePage() {
               theme={currentTheme}
               font={currentFont}
               isFolding={isFolding}
-              onUpdatePostcard={updateField}
+              onUpdatePostcard={actions.updatePostcard}
               onFocus={() => setIsTyping(true)}
               onBlur={() => setIsTyping(false)}
             />
@@ -169,8 +233,7 @@ export default function TimeCapsulePage() {
         )}
       </AnimatePresence>
 
-      {/* ✅ Control Panel: Logic ใหม่ */}
-      {/* Mobile: ซ่อนตอนพิมพ์ | Desktop: แสดงตลอดเวลา */}
+      {/* Control Panel */}
       {!isSent && !isFolding && (
         <div
           className={`absolute bottom-4 left-0 right-0 z-50 flex justify-center transition-all duration-300
@@ -184,9 +247,9 @@ export default function TimeCapsulePage() {
             theme={currentTheme}
             font={currentFont}
             isMessageEmpty={!editor || editor.isEmpty}
-            onCycleFont={cycleFont}
-            onCycleTheme={cycleTheme}
-            onStartFolding={startFolding}
+            onCycleFont={actions.cycleFont}
+            onCycleTheme={actions.cycleTheme}
+            onStartFolding={actions.startFoldingRitual}
           />
         </div>
       )}

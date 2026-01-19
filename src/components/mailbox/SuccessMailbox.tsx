@@ -2,12 +2,14 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
-// 📦 เปลี่ยนจาก THEMES เป็น ENVELOPES จาก assets.ts
-import { ENVELOPES, CUTE_COLOR_MAP } from '@/constants/assets';
+import { CUTE_COLOR_MAP } from '@/constants/assets';
 
 const BALL_RADIUS = 33;
 const PHYSICS_RADIUS = BALL_RADIUS - 1;
 const WALL_THICK = 60;
+
+// ... (DOODLE_SHAPES และ Types เดิม คงไว้เหมือนเดิม) ...
+// Copy ส่วน DOODLE_SHAPES และ Type Ball, DoodleItem มาวางตรงนี้ได้เลย (เพื่อความกระชับ Nair ขอละไว้นะคะ)
 
 const DOODLE_SHAPES = [
     <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" key="1" />,
@@ -20,7 +22,7 @@ const DOODLE_SHAPES = [
 type Ball = {
     id: number;
     isUser: boolean;
-    color: string; // ✨ เปลี่ยนตรงนี้
+    color: string;
 };
 
 type DoodleItem = {
@@ -35,12 +37,13 @@ type DoodleItem = {
     opacity: number;
 };
 
+// ✅ ปรับ Props: รับ otherEnvelopes (List ของ id ซองจดหมาย) แทน ballCount
 export default function SuccessMailbox({
-    userEnvelopeId = 'white', // ✨ รับสีมาเลย (Default เป็นสีครีม)
-    ballCount = 40
+    userEnvelopeId = 'white',
+    otherEnvelopes = []
 }: {
-    userEnvelopeId?: string;     // ✨ เปลี่ยน Type ตรงนี้ด้วย
-    ballCount?: number;
+    userEnvelopeId?: string;
+    otherEnvelopes?: string[]; // Array ของ envelope_id เช่น ['pink', 'sky', 'mint']
 }) {
     const engineRef = useRef<Matter.Engine | null>(null);
     const [balls, setBalls] = useState<Ball[]>([]);
@@ -49,32 +52,21 @@ export default function SuccessMailbox({
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // ✨ Generate Random Doodles (เหมือนเดิม)
+    // --- 1. Doodles Logic (เหมือนเดิม) ---
     useEffect(() => {
         const newDoodles: DoodleItem[] = [];
         const count = 20;
-
         for (let i = 0; i < count; i++) {
             const zone = Math.floor(Math.random() * 3);
-            let topStr = '0%';
-            let leftStr = '0%';
-
-            if (zone === 0) {
-                leftStr = (Math.random() * 40 - 50) + '%';
-                topStr = (Math.random() * 120 - 10) + '%';
-            } else if (zone === 1) {
-                leftStr = (Math.random() * 40 + 110) + '%';
-                topStr = (Math.random() * 120 - 10) + '%';
-            } else {
-                leftStr = (Math.random() * 160 - 30) + '%';
-                topStr = (Math.random() * 30 - 40) + '%';
-            }
+            let topStr = '0%', leftStr = '0%';
+            if (zone === 0) { leftStr = (Math.random() * 40 - 50) + '%'; topStr = (Math.random() * 120 - 10) + '%'; }
+            else if (zone === 1) { leftStr = (Math.random() * 40 + 110) + '%'; topStr = (Math.random() * 120 - 10) + '%'; }
+            else { leftStr = (Math.random() * 160 - 30) + '%'; topStr = (Math.random() * 30 - 40) + '%'; }
 
             newDoodles.push({
                 id: i,
                 shapeIndex: Math.floor(Math.random() * DOODLE_SHAPES.length),
-                top: topStr,
-                left: leftStr,
+                top: topStr, left: leftStr,
                 scale: 0.4 + Math.random() * 0.6,
                 rotation: Math.random() * 360,
                 delay: Math.random() * 5 + 's',
@@ -85,7 +77,7 @@ export default function SuccessMailbox({
         setDoodles(newDoodles);
     }, []);
 
-    // --- Matter.js Logic ---
+    // --- 2. Matter.js Logic ---
     useEffect(() => {
         setBalls([]);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -104,11 +96,8 @@ export default function SuccessMailbox({
         engineRef.current = engine;
         engine.gravity.y = 1.5;
 
-        const width = 400;
-        const height = 500;
-        const wallOptions = { isStatic: true };
-        const wallHeight = 2000;
-
+        // Walls
+        const width = 400, height = 500, wallOptions = { isStatic: true }, wallHeight = 2000;
         World.add(engine.world, [
             Bodies.rectangle(width / 2, height + 20, width, WALL_THICK, wallOptions),
             Bodies.rectangle(0, height / 2 - (wallHeight / 2) + (height / 2), WALL_THICK, wallHeight, wallOptions),
@@ -116,16 +105,14 @@ export default function SuccessMailbox({
             Bodies.rectangle(width / 2, -1000, width, WALL_THICK, wallOptions)
         ]);
 
-        const crowdCount = Math.max(0, ballCount - 1);
+        // ✨ Crowd Balls (ลูกบอลประกอบฉากจาก DB)
         const initialBalls: Ball[] = [];
         const crowdBodies: Matter.Body[] = [];
 
-        for (let i = 0; i < crowdCount; i++) {
-            // สุ่ม ID ซองจาก List
-            const randomEnv = ENVELOPES[Math.floor(Math.random() * ENVELOPES.length)];
-
-            // ✅ Map ID เป็นสี (ถ้าหาไม่เจอใช้ Default)
-            const color = CUTE_COLOR_MAP[randomEnv.id] || CUTE_COLOR_MAP['default'];
+        // ✅ วนลูปสร้างบอลตาม list ที่ส่งมา
+        otherEnvelopes.forEach((envId) => {
+            // Map สีจาก ID (ถ้าหาไม่เจอใช้สีขาว)
+            const color = CUTE_COLOR_MAP[envId] || CUTE_COLOR_MAP['white'];
 
             const startX = Math.random() * 300 + 50;
             const startY = Math.random() * 300;
@@ -133,12 +120,13 @@ export default function SuccessMailbox({
                 restitution: 0.3, friction: 0.1, density: 0.04,
             });
             crowdBodies.push(body);
-            initialBalls.push({ id: body.id, isUser: false, color }); // ✅ ใส่สีที่ Map แล้ว
-        }
+            initialBalls.push({ id: body.id, isUser: false, color });
+        });
+
         World.add(engine.world, crowdBodies);
 
-        const Mouse = Matter.Mouse;
-        const MouseConstraint = Matter.MouseConstraint;
+        // Mouse Constraint
+        const Mouse = Matter.Mouse, MouseConstraint = Matter.MouseConstraint;
         if (containerRef.current) {
             const mouse = Mouse.create(containerRef.current);
             const mouseConstraint = MouseConstraint.create(engine, {
@@ -148,12 +136,14 @@ export default function SuccessMailbox({
             World.add(engine.world, mouseConstraint);
         }
 
+        // Run warm-up logic (ให้บอลกองรวมกันก่อนเริ่ม)
         for (let i = 0; i < 200; i++) { Engine.update(engine, 1000 / 60); }
         setBalls(initialBalls);
 
         const runner = Runner.create();
         Runner.run(runner, engine);
 
+        // Sync Physics -> DOM
         Events.on(engine, 'afterUpdate', () => {
             engine.world.bodies.forEach((body) => {
                 if (body.isStatic) return;
@@ -164,25 +154,20 @@ export default function SuccessMailbox({
             });
         });
 
+        // ✨ Hero Ball (ลูกบอลของ User) - Drop ลงมาทีหลัง
         timeoutRef.current = setTimeout(() => {
             if (!engineRef.current) return;
 
-            // ✅ Map userEnvelopeId (ที่ส่งมาจาก prop) เป็นสี
-            // userEnvelopeId จะเป็นค่าเช่น 'black' -> ได้สี '#CFD8DC'
-            const userColor = CUTE_COLOR_MAP[userEnvelopeId] || CUTE_COLOR_MAP['default'];
-
+            const userColor = CUTE_COLOR_MAP[userEnvelopeId] || CUTE_COLOR_MAP['white'];
             const startX = Math.random() * 100 + 150;
             const heroBody = Bodies.circle(startX, -150, PHYSICS_RADIUS, {
                 restitution: 0.7, friction: 0.05, frictionAir: 0.05, density: 0.1,
             });
 
-            // ... (Physics Property ของ Hero เหมือนเดิม) ...
             Matter.Body.setAngularVelocity(heroBody, Math.random() * 0.2 - 0.1);
             Matter.Body.setVelocity(heroBody, { x: 0, y: 15 });
 
             Matter.World.add(engineRef.current.world, heroBody);
-
-            // ✅ ใส่สี userColor ที่ Map มาแล้ว
             setBalls(prev => [...prev, { id: heroBody.id, isUser: true, color: userColor }]);
         }, 600);
 
@@ -194,11 +179,13 @@ export default function SuccessMailbox({
                 Matter.Engine.clear(engineRef.current);
             }
         };
-    }, [userEnvelopeId, ballCount]); // Re-run ถ้า ID เปลี่ยน
+    }, [userEnvelopeId, otherEnvelopes]); // ✅ Re-run เมื่อข้อมูลเปลี่ยน
 
+    // ... (ส่วน Render JSX เหมือนเดิมเป๊ะ ไม่ต้องแก้) ...
+    // ตั้งแต่ return (...) ไปจนจบไฟล์ Copy ของเดิมมาวางได้เลยค่ะ
     return (
         <div ref={containerRef} className="relative w-[400px] h-[500px]">
-
+            {/* Copy JSX เดิมมาวางตรงนี้ */}
             {/* Atmosphere Doodles */}
             <div className="absolute inset-0 pointer-events-none">
                 {doodles.map((doodle) => (
@@ -305,7 +292,7 @@ export default function SuccessMailbox({
             </div>
 
             {/* Frosted Glass Washi Tape */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[60]">
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[60] select-none">
                 <div className="relative group cursor-default">
                     <div
                         className="px-8 py-3 text-[#2d2d2d] font-ibm-plex text-sm font-bold tracking-widest uppercase relative overflow-hidden"

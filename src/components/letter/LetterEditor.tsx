@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { EditorContent, Editor } from '@tiptap/react';
 import { PostcardData, Theme, Font } from '@/types';
 import { EditorToolbar } from './EditorToolbar';
@@ -39,7 +39,7 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
     // ใช้ Logic Toolbar ที่แยกออกมาใหม่
     const toolbarTop = useFloatingToolbar(editor, scrollRef);
 
-    const isFocused = editor?.isFocused;
+    const [isEditorFocused, setIsEditorFocused] = useState(false);
 
     // Trigger checkScroll เมื่อข้อความเปลี่ยน (เพื่อ update เงา scroll)
     useEffect(() => {
@@ -57,6 +57,21 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
         '--highlight-standard': `${currentHighlights.standard}B3`,
         '--highlight-accent': `${currentHighlights.accent}B3`,
     } as React.CSSProperties;
+
+    useEffect(() => {
+        if (!editor) return;
+
+        const handleFocus = () => setIsEditorFocused(true);
+        const handleBlur = () => setIsEditorFocused(false);
+
+        editor.on('focus', handleFocus);
+        editor.on('blur', handleBlur);
+
+        return () => {
+            editor.off('focus', handleFocus);
+            editor.off('blur', handleBlur);
+        };
+    }, [editor]);
 
     return (
         <div
@@ -116,7 +131,7 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
                     transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] z-[60]
                     
                     /* ✨ 2. เพิ่ม translate-y-0 ตอนแสดงผล เพื่อให้มั่นใจว่ามันวิ่งกลับมาที่เดิม */
-                    ${isFocused ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-8 pointer-events-none'}
+                    ${isEditorFocused ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-8 pointer-events-none'}
                     
                     /* Mobile: ใช้ fixed เพื่อลอยเหนือ Keyboard */
                     fixed left-4 right-4
@@ -195,8 +210,8 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
                     pointer-events: none;
                     height: 0;
                 }
-                .ProseMirror h1 { font-size: 1.6em; font-weight: 800; line-height: 1.2; margin-top: 0.5em; margin-bottom: 0.2em; }
-                .ProseMirror h2 { font-size: 1.3em; font-weight: 700; line-height: 1.3; margin-top: 0.5em; margin-bottom: 0.2em; }
+                .ProseMirror h1 { font-size: 1.6em; font-weight: 800; line-height: 1.2; margin-top: 0.5em; margin-bottom: 0.5em; }
+                .ProseMirror h2 { font-size: 1.3em; font-weight: 700; line-height: 1.3; margin-top: 0.5em; margin-bottom: 0.5em; }
                 .ProseMirror p { margin-bottom: 0.5em; }
                 .ProseMirror p[style*="text-align: justify"] { text-justify: inter-cluster; }
                 .ProseMirror mark {

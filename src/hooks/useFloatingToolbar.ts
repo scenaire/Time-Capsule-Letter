@@ -17,9 +17,9 @@ export const useFloatingToolbar = (editor: Editor | null, scrollRef: RefObject<H
         const endPos = editor.view.coordsAtPos(to);
 
         // เราจะอิง "จุดสิ้นสุด" (ปลายปากกา) เป็นหลัก
-        const toolbarHeight = 60;
-        const offset = 15;
-        const headerSafeZone = 80; // พื้นที่ด้านบนที่ห้ามไปบัง (Header / Top Edge)
+        const toolbarHeight = 50;
+        const offset = 20;
+        const headerSafeZone = 10; // พื้นที่ด้านบนที่ห้ามไปบัง (Header / Top Edge)
 
         // 📐 ลองวางไว้ "ข้างบน" ก่อน (Top Strategy)
         let calculatedTop = startPos.top - toolbarHeight - offset;
