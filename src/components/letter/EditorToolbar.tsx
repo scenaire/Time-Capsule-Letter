@@ -18,6 +18,16 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
     // State สำหรับ Dropdown ของ Heading (Desktop Only)
     const [showHeadingMenu, setShowHeadingMenu] = useState(false);
     const headingMenuRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        // ถ้าเป็นมือถือ ให้ดีดกลับไปซ้ายสุด (0) เสมอในครั้งแรกที่โหลด
+        if (isMobile && scrollContainerRef.current) {
+            scrollContainerRef.current.scrollLeft = 0;
+        }
+    }, []); // [] = ทำแค่ครั้งเดียวตอน Mount (ครั้งถัดไปจะจำค่าล่าสุดที่ User เลื่อนไว้)
+
+    // ... (useEffect handleClickOutside เดิม) ...
 
     // ปิด Dropdown เมื่อคลิกที่อื่น
     useEffect(() => {
@@ -91,11 +101,14 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
     };
 
     return (
-        <div className={`flex items-center
+
+        <div
+            ref={scrollContainerRef} // ✅ เพิ่ม: ผูก Ref ตรงนี้
+            className={`flex items-center
             ${isMobile
-                ? 'w-full px-4 py-3 gap-3 overflow-x-auto no-scrollbar snap-x'
-                : 'gap-1 p-1.5'
-            }`}
+                    ? 'w-full py-3 gap-3 overflow-x-auto no-scrollbar snap-x before:w-6 before:shrink-0 after:w-6 after:shrink-0'
+                    : 'gap-1 p-1.5'
+                }`}
         >
             {/* --- Group 1: Headings (Redesigned) --- */}
             <div className="flex items-center gap-1 shrink-0 snap-start relative" ref={headingMenuRef}>
@@ -103,7 +116,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
                     // 📱 Mobile: ปุ่มเดียว กดแล้ววนลูป
                     <button
                         onMouseDown={(e) => handleAction(e, cycleHeading)}
-                        className={btnClass(true)} // ให้ Active ตลอดเพื่อให้รู้ว่าเป็นปุ่มเลือก Type
+                        className={btnClass(false)}
                         title="Change Text Style"
                     >
                         {getCurrentHeadingIcon()}
@@ -188,7 +201,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
             {/* --- Group 4: Colors --- */}
             <div className="flex items-center gap-3 pl-1 shrink-0 snap-start">
-                <Highlighter size={16} className="text-black/30 hidden sm:block" />
+                <Highlighter size={16} className="text-black/30 mr-1" />
                 {themeColors.map(({ color, name }) => (
                     <button
                         key={color}

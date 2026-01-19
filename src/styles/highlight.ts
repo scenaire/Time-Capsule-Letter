@@ -8,8 +8,8 @@ export const highlightStyles = {
 
     /* light paper, blue text */
     'Daydream Tide': {
-        soft: '#fffced',
-        standard: '#f9e239',
+        soft: '#f9e239',
+        standard: '#c2f7ff',
         accent: '#ffd3f0',
     },
 
@@ -36,13 +36,13 @@ export const highlightStyles = {
 
     /* light paper, wine red text */
     'Red Wine': {
-        soft: '#e5a9b8',
-        standard: '#e6778d',
+        soft: '#f7becd',
+        standard: '#ff99b3',
         accent: '#eb88af',
     },
 
     /* light paper, scarlet text */
-    'Wakashi': {
+    'Sakura Mochi': {
         soft: '#ffc5d9',
         standard: '#ffaac5',
         accent: '#d0e080',

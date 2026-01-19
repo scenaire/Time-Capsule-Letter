@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { EditorContent, Editor } from '@tiptap/react';
 import { PostcardData, Theme, Font } from '@/types';
 import { EditorToolbar } from './EditorToolbar';
@@ -29,6 +29,9 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
     const scrollRef = useRef<HTMLDivElement>(null);
     const [scrollState, setScrollState] = useState({ isAtTop: true, isAtBottom: true });
 
+    // State ใหม่เก็บตำแหน่ง Top ของ Toolbar (สำหรับ Mobile Bubble)
+    const [toolbarTop, setToolbarTop] = useState<number | null>(null);
+
     // State เช็ค Focus เพื่อโชว์ Toolbar
     const isFocused = editor?.isFocused;
 
@@ -54,6 +57,60 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
         window.addEventListener('resize', handleScroll);
         return () => window.removeEventListener('resize', handleScroll);
     }, [postcard.message]);
+
+    // ✅ 3. Smart Floating Logic (คำนวณตำแหน่ง Bubble เฉพาะ Mobile)
+    const updateToolbarPosition = useCallback(() => {
+        // ทำงานเฉพาะตอน Focus และเป็นหน้าจอมือถือ (< 768px)
+        if (!editor || !isFocused || window.innerWidth >= 768) return;
+
+        // หาพิกัดของ Selection ปัจจุบัน
+        const { from, to } = editor.state.selection;
+
+        // ถาม Tiptap ว่าจุดเริ่มต้น (from) และจุดสิ้นสุด (to) อยู่ตรงไหนของจอ
+        const startPos = editor.view.coordsAtPos(from);
+        const endPos = editor.view.coordsAtPos(to);
+
+        // เราจะอิง "จุดสิ้นสุด" (ปลายปากกา) เป็นหลัก
+        // ความสูง Toolbar ประมาณ 50-60px + Offset 10px
+        const toolbarHeight = 60;
+        const offset = 15;
+        const headerSafeZone = 80; // พื้นที่ด้านบนที่ห้ามไปบัง (Header / Top Edge)
+
+        // 📐 ลองวางไว้ "ข้างบน" ก่อน (Top Strategy)
+        let calculatedTop = startPos.top - toolbarHeight - offset;
+
+        // 🛡️ Flip Logic: ถ้ามันสูงเกินไปจนชนขอบบน
+        if (calculatedTop < headerSafeZone) {
+            // ดีดลงไปอยู่ "ข้างล่าง" บรรทัดนั้นแทน (Bottom Strategy)
+            calculatedTop = endPos.bottom + offset;
+        }
+
+        setToolbarTop(calculatedTop);
+    }, [editor, isFocused]);
+
+    // Hook: สั่งคำนวณใหม่ทุกครั้งที่ Cursor ขยับ
+    useEffect(() => {
+        if (!editor) return;
+
+        const update = () => requestAnimationFrame(updateToolbarPosition);
+
+        editor.on('selectionUpdate', update);
+        editor.on('focus', update);
+        editor.on('blur', update);
+
+        // ดักจับ Scroll ของตัว Editor เองด้วย
+        const scrollElement = scrollRef.current;
+        if (scrollElement) scrollElement.addEventListener('scroll', update);
+        window.addEventListener('resize', update);
+
+        return () => {
+            editor.off('selectionUpdate', update);
+            editor.off('focus', update);
+            editor.off('blur', update);
+            if (scrollElement) scrollElement.removeEventListener('scroll', update);
+            window.removeEventListener('resize', update);
+        };
+    }, [editor, updateToolbarPosition]);
 
     // 3. 🎨 Dynamic Highlight Styles
     const currentHighlights = highlightStyles[theme.name as keyof typeof highlightStyles] || highlightStyles['Carbon Fiber'];
@@ -112,35 +169,45 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
                     style={{
                         fontFamily: `var(--${font.id})`,
                         color: theme.text,
-                        lineHeight: '1.6',
+                        lineHeight: '1.6'
                     }}
                     onBlur={onBlur}
                 />
             </div>
 
-            {/* --- ✨ Universal Toolbar Container --- */}
-            {/* Logic: แสดงเมื่อ isFocused = true */}
-            <div className={`
-                transition-all duration-500 ease-out z-40
-                ${isFocused ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'}
-                
-                /* 📱 Mobile: ติดขอบล่างซองจดหมาย (Sliding Ribbon) */
-                absolute bottom-0 left-0 right-0
-                
-                /* 💻 Desktop: ลอยอยู่เหนือขอบล่างนิดหน่อย (Floating Capsule) */
-                md:bottom-4 md:left-1/2 md:right-auto md:-translate-x-1/2
-            `}>
+            {/* ✅ 5. Floating Bubble Toolbar (Mobile Optimized) */}
+            <div
+                className={`
+                    /* ✨ 1. ปรับ Animation: ช้าลง (500ms) + นุ่มนวล (Cubic Bezier) */
+                    transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] z-[60]
+                    
+                    /* ✨ 2. เพิ่ม translate-y-0 ตอนแสดงผล เพื่อให้มั่นใจว่ามันวิ่งกลับมาที่เดิม */
+                    ${isFocused ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-8 pointer-events-none'}
+                    
+                    /* Mobile: ใช้ fixed เพื่อลอยเหนือ Keyboard */
+                    fixed left-4 right-4
+                    
+                    /* Desktop: ใช้ absolute ในกรอบ */
+                    /* ⚠️ ลบ md:translate-y-0 ออก เพื่อให้ Animation แนวตั้งทำงานบน Desktop ด้วย */
+                    md:absolute md:bottom-4 md:left-1/2 md:right-auto md:-translate-x-1/2
+                `}
+                style={{
+                    // ถ้าเป็น Mobile ให้ใช้ค่า toolbarTop ที่คำนวณมา (ถ้ายังไม่มีให้ซ่อนไปก่อนด้วย -1000)
+                    top: (typeof window !== 'undefined' && window.innerWidth < 768)
+                        ? (toolbarTop ?? -1000)
+                        : undefined
+                }}
+            >
                 <div className={`
-                    /* Glassmorphism Effect */
-                    bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl
-                    
-                    /* 📱 Mobile Styling: เต็มจอ, เหลี่ยมบน, ไม่มีขอบมนล่าง */
-                    w-full rounded-t-2xl border-b-0
-                    
-                    /* 💻 Desktop Styling: แคปซูลมนๆ, กว้างพอดีเนื้อหา */
-                    md:w-auto md:rounded-full md:border
-                `}>
-                    {/* ส่ง isMobile prop: ถ้าจอเล็กกว่า md ให้ถือเป็น Mobile */}
+    /* Design: แคปซูลลอยได้ */
+    mx-auto max-w-sm
+    bg-white/90 backdrop-blur-xl border border-black/10 shadow-xl
+    rounded-full p-1
+    
+    /* Desktop Styling override */
+    /* ✅ เพิ่ม md:max-w-none เพื่อปลดล็อคความกว้างบน Desktop ให้ยืดตามเนื้อหา */
+    md:bg-white/80 md:border-white/40 md:shadow-2xl md:max-w-none
+`}>
                     <div className="md:hidden">
                         <EditorToolbar editor={editor} isMobile={true} />
                     </div>

@@ -107,7 +107,7 @@ export default function TimeCapsulePage() {
 
   return (
     <main
-      className={`h-screen w-full flex items-center justify-center overflow-hidden p-4 transition-colors duration-700 ${currentTheme.pageBg}`}
+      className={`fixed inset-0 h-[100dvh] w-full flex items-center justify-center overflow-hidden p-4 transition-colors duration-700 overscroll-none ${currentTheme.pageBg}`}
       style={{
         perspective: '2000px',
         backgroundImage: `radial-gradient(${dotColor} 1.5px, transparent 1.5px)`,
@@ -169,23 +169,25 @@ export default function TimeCapsulePage() {
         )}
       </AnimatePresence>
 
-      {/* Control Panel (ด้านล่างสุด) */}
+      {/* ✅ Control Panel: Logic ใหม่ */}
+      {/* Mobile: ซ่อนตอนพิมพ์ | Desktop: แสดงตลอดเวลา */}
       {!isSent && !isFolding && (
         <div
-          className={`absolute bottom-4 left-0 right-0 z-50 flex justify-center pointer-events-none transition-transform duration-300 
-                    ${isTyping ? 'translate-y-[200%] md:translate-y-0' : 'translate-y-0'}`}
+          className={`absolute bottom-4 left-0 right-0 z-50 flex justify-center transition-all duration-300
+                        ${isTyping
+              ? 'opacity-0 translate-y-10 pointer-events-none md:opacity-100 md:translate-y-0 md:pointer-events-auto'
+              : 'opacity-100 translate-y-0 pointer-events-auto'
+            }
+                    `}
         >
-          <div className="pointer-events-auto">
-            <ControlPanel
-              theme={currentTheme}
-              font={currentFont}
-              // เช็คข้อความว่างจาก Editor
-              isMessageEmpty={!editor || editor.isEmpty}
-              onCycleFont={cycleFont}
-              onCycleTheme={cycleTheme}
-              onStartFolding={startFolding}
-            />
-          </div>
+          <ControlPanel
+            theme={currentTheme}
+            font={currentFont}
+            isMessageEmpty={!editor || editor.isEmpty}
+            onCycleFont={cycleFont}
+            onCycleTheme={cycleTheme}
+            onStartFolding={startFolding}
+          />
         </div>
       )}
     </main>

@@ -37,6 +37,7 @@ const fontGoogleSans = Google_Sans({
   subsets: ["thai", "latin"],
   weight: ["400", "700"],
   variable: "--font-google-sans", // กำหนดชื่อตัวแปร
+  adjustFontFallback: false
 });
 
 const fontOumInEveryDay = localFont({
