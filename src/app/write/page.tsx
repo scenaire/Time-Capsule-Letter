@@ -96,7 +96,7 @@ export default function TimeCapsulePage() {
     if (isSent) {
       const envId = currentEnvelope.id;
       const timeout = setTimeout(() => {
-        router.push(`/archived?theme=${envId}`);
+        router.push(`/archived?envelope=${envId}`);
       }, 500);
       return () => clearTimeout(timeout);
     }

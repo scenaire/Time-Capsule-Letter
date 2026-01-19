@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { IBM_Plex_Sans_Thai, Anuphan, Google_Sans } from "next/font/google";
+import { IBM_Plex_Sans_Thai, Anuphan } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/common/Providers";
 
@@ -28,12 +28,10 @@ const fontAnuphan = Anuphan({
   variable: "--font-anuphan", // กำหนดชื่อตัวแปร
 });
 
-const fontGoogleSans = Google_Sans({
-  subsets: ["thai", "latin"],
-  weight: ["400", "700"],
-  variable: "--font-google-sans", // กำหนดชื่อตัวแปร
-  adjustFontFallback: false
-});
+const fontGoogleSans = localFont({
+  src: '../../public/fonts/GoogleSans-VariableFont_wght.ttf',
+  variable: '--font-google-sans',
+})
 
 const fontFkAmour = localFont({
   src: '../../public/fonts/FKAmourRegular.ttf',
