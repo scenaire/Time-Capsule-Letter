@@ -90,12 +90,6 @@ export const useLetterLogic = () => {
     };
 
     useEffect(() => {
-        if (status === "unauthenticated") {
-            router.push("/");
-        }
-    }, [status, router]);
-
-    useEffect(() => {
         // ใส่ ?. เพื่อเช็คความปลอดภัย
         if (session?.user?.name && !hasAutoFilledName.current) {
             setPostcard(prev => ({
