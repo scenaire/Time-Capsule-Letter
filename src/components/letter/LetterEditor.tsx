@@ -169,7 +169,7 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
                     style={{
                         fontFamily: `var(--${font.id})`,
                         color: theme.text,
-                        lineHeight: '1.6'
+                        lineHeight: font.id === 'font-pani' ? '1.4' : '1.6',
                     }}
                     onBlur={onBlur}
                 />

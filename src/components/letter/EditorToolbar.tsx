@@ -90,7 +90,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
     const colorBtnClass = (color: string, isActive: boolean) =>
         `w-5 h-5 rounded-full border border-black/10 transition-all duration-300 cursor-pointer shrink-0
-        ${isActive ? 'scale-125 ring-2 ring-black ring-offset-1 shadow-md' : 'hover:scale-110 hover:shadow-sm'}`;
+        ${isActive ? 'scale-125 ring-2 ring-black/60 ring-offset-1 shadow-md' : 'hover:scale-110 hover:shadow-sm'}`;
 
     const Divider = () => <div className="w-[1px] h-5 bg-black/10 mx-1 shrink-0" />;
 

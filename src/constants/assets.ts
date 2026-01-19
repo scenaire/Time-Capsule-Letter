@@ -13,14 +13,16 @@ export const ENVELOPES = [
         name: 'Warm Ivory',
         env: '#E9E4DC',
         envFront: '#F2EEE7',
-        envSecond: '#D8D2C8'
+        envSecond: '#D8D2C8',
+        isDark: false,
     },
     {
         id: 'black',
         name: 'Charcoal Black',
         env: '#1E1E1E',
         envFront: '#2A2A2A',
-        envSecond: '#141414'
+        envSecond: '#141414',
+        isDark: true,
     },
 
     // light → dark → pop → soft (rhythm start)
@@ -29,28 +31,32 @@ export const ENVELOPES = [
         name: 'Cherry Blush',
         env: '#ffb7ccff',
         envFront: '#ff94b6ff',
-        envSecond: '#fea0bcff'
+        envSecond: '#fea0bcff',
+        isDark: false,
     },
     {
         id: 'ink_teal',
         name: 'Ink Teal',
         env: '#0F4C5C',
         envFront: '#0a5f70ff',
-        envSecond: '#082F39'
+        envSecond: '#082F39',
+        isDark: true,
     },
     {
         id: 'lemon',
         name: 'Lemon Cream',
         env: '#F6E3A1',
         envFront: '#fae68cff',
-        envSecond: '#f8da70ff'
+        envSecond: '#f8da70ff',
+        isDark: false,
     },
     {
         id: 'grape_ash',
         name: 'Grape Ash',
         env: '#4B3A4F',
         envFront: '#4e3c53ff',
-        envSecond: '#2E2431'
+        envSecond: '#2E2431',
+        isDark: true,
     },
 
     // cool → warm → dark earth
@@ -59,21 +65,24 @@ export const ENVELOPES = [
         name: 'Mint Candy',
         env: '#9EDDD3',
         envFront: '#9cefe3ff',
-        envSecond: '#84C9BF'
+        envSecond: '#84C9BF',
+        isDark: false,
     },
     {
         id: 'butter',
         name: 'Butter Milk',
         env: '#F2D7B6',
         envFront: '#f8daafff',
-        envSecond: '#E4C39A'
+        envSecond: '#E4C39A',
+        isDark: false,
     },
     {
         id: 'burnt_matcha',
         name: 'Burnt Matcha',
         env: '#3F4F2E',
         envFront: '#5E6F4A',
-        envSecond: '#26301B'
+        envSecond: '#26301B',
+        isDark: true,
     },
 
     // airy → bold pop → classic
@@ -82,21 +91,24 @@ export const ENVELOPES = [
         name: 'Baby Sky',
         env: '#AFCBE8',
         envFront: '#a8caefff',
-        envSecond: '#97B6D6'
+        envSecond: '#97B6D6',
+        isDark: false,
     },
     {
         id: 'electric_apricot',
         name: 'Electric Apricot',
         env: '#FF8A4D',
         envFront: '#e67437ff',
-        envSecond: '#E0632A'
+        envSecond: '#E0632A',
+        isDark: false,
     },
     {
         id: 'navy',
         name: 'Classic Navy',
         env: '#1E2A38',
         envFront: '#2A394A',
-        envSecond: '#141E28'
+        envSecond: '#141E28',
+        isDark: true,
     },
 
     // finish with cozy & calm
@@ -105,21 +117,24 @@ export const ENVELOPES = [
         name: 'Lavender Soda',
         env: '#C6B7E2',
         envFront: '#cdbdf3ff',
-        envSecond: '#B1A0D1'
+        envSecond: '#B1A0D1',
+        isDark: false,
     },
     {
         id: 'matcha',
         name: 'Matcha Latte',
         env: '#A8C2A0',
         envFront: '#93b58cff',
-        envSecond: '#8FAA88'
+        envSecond: '#8FAA88',
+        isDark: false,
     },
     {
         id: 'cocoa',
         name: 'Classic Cocoa',
         env: '#4B1D10',
         envFront: '#62231E',
-        envSecond: '#53211A'
+        envSecond: '#53211A',
+        isDark: true,
     }
 ];
 

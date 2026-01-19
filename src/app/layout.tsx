@@ -16,11 +16,6 @@ const fontADELIA = localFont({
   variable: '--font-adelia',
 })
 
-const fontJaoAugust = localFont({
-  src: '../../public/fonts/JaoAugust.ttf',
-  variable: '--font-jao-august',
-})
-
 const fontIbmPlex = IBM_Plex_Sans_Thai({
   subsets: ["thai", "latin"],
   weight: ["400", "700"],
@@ -40,10 +35,16 @@ const fontGoogleSans = Google_Sans({
   adjustFontFallback: false
 });
 
-const fontOumInEveryDay = localFont({
-  src: '../../public/fonts/oumineveryday.ttf',
-  variable: '--font-oumineveryday',
+const fontFkAmour = localFont({
+  src: '../../public/fonts/FKAmourRegular.ttf',
+  variable: '--font-fk-amour',
+  declarations: [
+    { prop: 'ascent-override', value: '100%' },   // ลดเพดานลงมา (จากปกติ ~100%)
+    { prop: 'descent-override', value: '20%' },  // ยกพื้นขึ้นมา (จากปกติ ~30%)
+    { prop: 'line-gap-override', value: '0%' },  // ตัดช่องว่างส่วนเกิน
+  ],
 })
+
 
 
 // 2. ตั้งค่าข้อมูลพื้นฐานของเว็บไซต์ (Metadata)
@@ -62,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ${fontAnuphan.variable}
         ${fontIbmPlex.variable}
         ${fontGoogleSans.variable}
-        ${fontOumInEveryDay.variable}
+        ${fontFkAmour.variable}
         antialiased
       `}>
         <Providers>{children}</Providers>
