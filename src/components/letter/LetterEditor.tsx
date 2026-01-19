@@ -1,8 +1,12 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { EditorContent, Editor } from '@tiptap/react';
 import { PostcardData, Theme, Font } from '@/types';
 import { EditorToolbar } from './EditorToolbar';
 import { highlightStyles } from '@/styles/highlight';
+
+// ✅ Import Hooks
+import { useScrollIndicator } from '@/hooks/useScrollIndicator';
+import { useFloatingToolbar } from '@/hooks/useFloatingToolbar';
 
 interface LetterEditorProps {
     editor: Editor | null;
@@ -25,99 +29,30 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
     onFocus,
     onBlur
 }) => {
-    // 1. Setup Scroll Refs & State
+    // 1. Setup Refs
     const scrollRef = useRef<HTMLDivElement>(null);
-    const [scrollState, setScrollState] = useState({ isAtTop: true, isAtBottom: true });
 
-    // State ใหม่เก็บตำแหน่ง Top ของ Toolbar (สำหรับ Mobile Bubble)
-    const [toolbarTop, setToolbarTop] = useState<number | null>(null);
+    // ✅ 2. Use Custom Hooks
+    // ใช้ Logic Scroll ที่คุณมีอยู่แล้วใน hooks
+    const { isAtTop, isAtBottom, checkScroll } = useScrollIndicator(scrollRef);
 
-    // State เช็ค Focus เพื่อโชว์ Toolbar
+    // ใช้ Logic Toolbar ที่แยกออกมาใหม่
+    const toolbarTop = useFloatingToolbar(editor, scrollRef);
+
     const isFocused = editor?.isFocused;
 
-    // 2. 🧠 Smart Scroll Logic
-    const handleScroll = () => {
-        if (!scrollRef.current) return;
-        const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-
-        if (scrollHeight <= clientHeight) {
-            setScrollState({ isAtTop: true, isAtBottom: true });
-            return;
-        }
-
-        const isBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 60;
-        setScrollState({
-            isAtTop: scrollTop <= 5,
-            isAtBottom: isBottom
-        });
-    };
-
+    // Trigger checkScroll เมื่อข้อความเปลี่ยน (เพื่อ update เงา scroll)
     useEffect(() => {
-        handleScroll();
-        window.addEventListener('resize', handleScroll);
-        return () => window.removeEventListener('resize', handleScroll);
-    }, [postcard.message]);
+        checkScroll();
+        window.addEventListener('resize', checkScroll);
+        return () => window.removeEventListener('resize', checkScroll);
+    }, [postcard.message, checkScroll]);
 
-    // ✅ 3. Smart Floating Logic (คำนวณตำแหน่ง Bubble เฉพาะ Mobile)
-    const updateToolbarPosition = useCallback(() => {
-        // ทำงานเฉพาะตอน Focus และเป็นหน้าจอมือถือ (< 768px)
-        if (!editor || !isFocused || window.innerWidth >= 768) return;
-
-        // หาพิกัดของ Selection ปัจจุบัน
-        const { from, to } = editor.state.selection;
-
-        // ถาม Tiptap ว่าจุดเริ่มต้น (from) และจุดสิ้นสุด (to) อยู่ตรงไหนของจอ
-        const startPos = editor.view.coordsAtPos(from);
-        const endPos = editor.view.coordsAtPos(to);
-
-        // เราจะอิง "จุดสิ้นสุด" (ปลายปากกา) เป็นหลัก
-        // ความสูง Toolbar ประมาณ 50-60px + Offset 10px
-        const toolbarHeight = 60;
-        const offset = 15;
-        const headerSafeZone = 80; // พื้นที่ด้านบนที่ห้ามไปบัง (Header / Top Edge)
-
-        // 📐 ลองวางไว้ "ข้างบน" ก่อน (Top Strategy)
-        let calculatedTop = startPos.top - toolbarHeight - offset;
-
-        // 🛡️ Flip Logic: ถ้ามันสูงเกินไปจนชนขอบบน
-        if (calculatedTop < headerSafeZone) {
-            // ดีดลงไปอยู่ "ข้างล่าง" บรรทัดนั้นแทน (Bottom Strategy)
-            calculatedTop = endPos.bottom + offset;
-        }
-
-        setToolbarTop(calculatedTop);
-    }, [editor, isFocused]);
-
-    // Hook: สั่งคำนวณใหม่ทุกครั้งที่ Cursor ขยับ
-    useEffect(() => {
-        if (!editor) return;
-
-        const update = () => requestAnimationFrame(updateToolbarPosition);
-
-        editor.on('selectionUpdate', update);
-        editor.on('focus', update);
-        editor.on('blur', update);
-
-        // ดักจับ Scroll ของตัว Editor เองด้วย
-        const scrollElement = scrollRef.current;
-        if (scrollElement) scrollElement.addEventListener('scroll', update);
-        window.addEventListener('resize', update);
-
-        return () => {
-            editor.off('selectionUpdate', update);
-            editor.off('focus', update);
-            editor.off('blur', update);
-            if (scrollElement) scrollElement.removeEventListener('scroll', update);
-            window.removeEventListener('resize', update);
-        };
-    }, [editor, updateToolbarPosition]);
-
-    // 3. 🎨 Dynamic Highlight Styles
+    // 3. 🎨 Dynamic Highlight Styles (เหมือนเดิมเป๊ะ)
     const currentHighlights = highlightStyles[theme.name as keyof typeof highlightStyles] || highlightStyles['Carbon Fiber'];
     const dynamicStyles = {
         backgroundColor: theme.bg,
         padding: '0',
-        // ✅ กำหนดตัวแปร CSS พร้อมเติม 'B3' ต่อท้ายเพื่อทำ Opacity 70%
         '--highlight-soft': `${currentHighlights.soft}B3`,
         '--highlight-standard': `${currentHighlights.standard}B3`,
         '--highlight-accent': `${currentHighlights.accent}B3`,
@@ -144,7 +79,7 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
             {/* --- Body: Tiptap Editor --- */}
             <div
                 ref={scrollRef}
-                onScroll={handleScroll}
+                onScroll={checkScroll} // ✅ ใช้ checkScroll จาก Hook
                 className="h-auto overflow-y-auto px-6 md:px-14 py-2 cursor-default relative custom-scrollbar"
                 onClick={() => {
                     editor?.commands.focus();
@@ -152,15 +87,15 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
                 }}
                 style={{
                     maskImage: `linear-gradient(to bottom, 
-                        ${scrollState.isAtTop ? 'black' : 'transparent'} 0%, 
+                        ${isAtTop ? 'black' : 'transparent'} 0%, 
                         black 40px, 
                         black calc(100% - 40px), 
-                        ${scrollState.isAtBottom ? 'black' : 'transparent'} 100%)`,
+                        ${isAtBottom ? 'black' : 'transparent'} 100%)`,
                     WebkitMaskImage: `linear-gradient(to bottom, 
-                        ${scrollState.isAtTop ? 'black' : 'transparent'} 0%, 
+                        ${isAtTop ? 'black' : 'transparent'} 0%, 
                         black 40px, 
                         black calc(100% - 40px), 
-                        ${scrollState.isAtBottom ? 'black' : 'transparent'} 100%)`
+                        ${isAtBottom ? 'black' : 'transparent'} 100%)`
                 }}
             >
                 <EditorContent
@@ -169,6 +104,7 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
                     style={{
                         fontFamily: `var(--${font.id})`,
                         color: theme.text,
+                        // ✅ คงค่า Config เดิมของคุณไว้ (1.4 สำหรับ pani, 1.6 สำหรับอื่น ๆ)
                         lineHeight: font.id === 'font-pani' ? '1.4' : '1.6',
                     }}
                     onBlur={onBlur}
@@ -199,16 +135,17 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
                 }}
             >
                 <div className={`
-    /* Design: แคปซูลลอยได้ */
-    mx-auto max-w-sm
-    bg-white/90 backdrop-blur-xl border border-black/10 shadow-xl
-    rounded-full p-1
-    
-    /* Desktop Styling override */
-    /* ✅ เพิ่ม md:max-w-none เพื่อปลดล็อคความกว้างบน Desktop ให้ยืดตามเนื้อหา */
-    md:bg-white/80 md:border-white/40 md:shadow-2xl md:max-w-none
-`}>
+                    /* Design: แคปซูลลอยได้ */
+                    mx-auto max-w-sm
+                    bg-white/90 backdrop-blur-xl border border-black/10 shadow-xl
+                    rounded-full p-1
+                    
+                    /* Desktop Styling override */
+                    /* ✅ คงค่าเดิม: ปลดล็อคความกว้างบน Desktop */
+                    md:bg-white/80 md:border-white/40 md:shadow-2xl md:max-w-none
+                `}>
                     <div className="md:hidden">
+                        {/* ✅ ไม่ใส่ themeName เพราะ Component คุณไม่รับ prop นี้ */}
                         <EditorToolbar editor={editor} isMobile={true} />
                     </div>
                     <div className="hidden md:block">
@@ -247,14 +184,13 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
                 </div>
             </div>
 
-            {/* Global Styles */}
+            {/* Global Styles (เหมือนเดิมเป๊ะ) */}
             <style jsx global>{`
                 .ProseMirror { outline: none !important; }
                 .ProseMirror p.is-editor-empty:first-child::before {
                     content: attr(data-placeholder);
                     float: left;
                     color: color-mix(in srgb, currentColor, transparent 60%);
-                    /* Fallback สำหรับ Browser เก่า */
                     @supports not (color: color-mix(in srgb, currentColor, transparent 60%)) {
                         color: rgba(128, 128, 128, 0.4);
                     }
