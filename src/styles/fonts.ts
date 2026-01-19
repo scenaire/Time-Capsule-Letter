@@ -20,11 +20,11 @@ export const FONTS = [
     {
         id: 'font-fk-amour',
         name: 'FK Amour',
-        size: 'text-[14px] md:text-[18px]',
-        senderSize: 'text-[16px]',
-        senderText: 'text-[10px]',
-        envelopeText: 'text-[10px]',
-        envelopeSenderText: 'text-[6px]'
+        size: 'text-[15px] md:text-[19px]',
+        senderSize: 'text-[17px]',
+        senderText: 'text-[11px]',
+        envelopeText: 'text-[11px]',
+        envelopeSenderText: 'text-[7px]'
     },
     {
         id: 'font-pani',

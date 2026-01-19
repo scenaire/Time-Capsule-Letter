@@ -7,6 +7,7 @@ import { SEALS } from '@/constants/assets';
 import { EnvelopeBack, EnvelopeFront, EnvelopeFlap, EnvelopeSecond } from '@/components/envelope/EnvelopeSVGs';
 import { SealSelector } from '@/components/envelope/SealSelector';
 import { ActionButton, UndoButton } from '@/components/common/ActionButtons';
+import { highlightStyles } from '@/styles/highlight';
 
 interface EnvelopeContainerProps {
     envelope: {
@@ -15,6 +16,7 @@ interface EnvelopeContainerProps {
         envFront: string;
     };
     theme: {
+        name: string;
         bg: string;
         text: string;
     };
@@ -49,6 +51,14 @@ export const EnvelopeContainer = ({
     onCancel,
     onCycleEnvelope
 }: EnvelopeContainerProps) => {
+
+    const currentHighlights = highlightStyles[theme.name as keyof typeof highlightStyles] || highlightStyles['Carbon Fiber'];
+
+    const dynamicStyles = {
+        '--highlight-soft': `${currentHighlights.soft}B3`,
+        '--highlight-standard': `${currentHighlights.standard}B3`,
+        '--highlight-accent': `${currentHighlights.accent}B3`,
+    } as React.CSSProperties;
 
     return (
         <div className="relative w-full flex flex-col items-center justify-center">
@@ -111,13 +121,18 @@ export const EnvelopeContainer = ({
                            - overflow-y-auto: ถ้าเนื้อหายาวเกินพื้นที่ที่เหลือ (จนชน max-height) ให้ scroll ได้
                            - no-scrollbar: ซ่อน Scrollbar เพื่อความสวยงาม (ต้องมี class นี้ใน CSS หรือ Tailwind config)
                         */}
-                        <div className="flex-1 px-10 md:px-14 py-2 overflow-y-auto no-scrollbar min-h-0">
-                            <p
-                                className={`whitespace-pre-wrap leading-relaxed ${font.envelopeText} opacity-85 break-words`}
-                                style={{ fontFamily: `var(--${font.id})` }}
-                            >
-                                {postcard.message}
-                            </p>
+                        <div className="flex-1 px-10 md:px-12 py-2 overflow-y-auto no-scrollbar min-h-0">
+                            <div
+                                className={`ProseMirror w-full break-words opacity-80 ${font.envelopeText}`}
+                                style={{
+                                    ...dynamicStyles, // ยัดสี Highlight เข้าไป
+                                    color: theme.text,
+                                    fontFamily: `var(--${font.id})`,
+                                    // ถ้าอยากให้จัดกึ่งกลางเหมือนหน้าเขียน ให้เพิ่ม textAlign ตาม editor หรือ force center ตรงนี้
+                                    // textAlign: 'center' 
+                                }}
+                                dangerouslySetInnerHTML={{ __html: postcard.message }}
+                            />
                         </div>
 
                         {/* ================= FOOTER (Flex-none: ติดท้ายเสมอ) ================= */}

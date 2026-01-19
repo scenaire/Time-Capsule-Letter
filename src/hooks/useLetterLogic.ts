@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { supabase } from '@/lib/supabase';
 import { FONTS } from '@/styles/fonts';
 import { THEMES } from '@/styles/themes';
 import { ENVELOPES } from '@/constants/assets';
+
 
 // Types
 export interface PostcardState {

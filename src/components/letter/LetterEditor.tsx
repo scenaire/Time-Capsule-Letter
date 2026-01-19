@@ -34,7 +34,7 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
 
     // ✅ 2. Use Custom Hooks
     // ใช้ Logic Scroll ที่คุณมีอยู่แล้วใน hooks
-    const { isAtTop, isAtBottom, checkScroll } = useScrollIndicator(scrollRef);
+    const { isAtTop, isAtBottom, checkScroll } = useScrollIndicator(scrollRef, 20);
 
     // ใช้ Logic Toolbar ที่แยกออกมาใหม่
     const toolbarTop = useFloatingToolbar(editor, scrollRef);
@@ -79,23 +79,21 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
             {/* --- Body: Tiptap Editor --- */}
             <div
                 ref={scrollRef}
-                onScroll={checkScroll} // ✅ ใช้ checkScroll จาก Hook
+                onScroll={checkScroll}
                 className="h-auto overflow-y-auto px-6 md:px-14 py-2 cursor-default relative custom-scrollbar"
-                onClick={() => {
-                    editor?.commands.focus();
-                    onFocus?.();
-                }}
+                // ... (onClick) ...
                 style={{
+                    // ✅ แก้ไข 2: กลับมาใช้ isAtBottom เพียวๆ (เพราะตอนนี้มันฉลาดขึ้นแล้ว)
                     maskImage: `linear-gradient(to bottom, 
                         ${isAtTop ? 'black' : 'transparent'} 0%, 
                         black 40px, 
                         black calc(100% - 40px), 
-                        ${isAtBottom ? 'black' : 'transparent'} 100%)`,
+                        ${isAtBottom ? 'black' : 'transparent'} 100%)`, // ตัด || isEditingLastLine ออก
                     WebkitMaskImage: `linear-gradient(to bottom, 
                         ${isAtTop ? 'black' : 'transparent'} 0%, 
                         black 40px, 
                         black calc(100% - 40px), 
-                        ${isAtBottom ? 'black' : 'transparent'} 100%)`
+                        ${isAtBottom ? 'black' : 'transparent'} 100%)`  // ตัด || isEditingLastLine ออก
                 }}
             >
                 <EditorContent
@@ -105,7 +103,7 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
                         fontFamily: `var(--${font.id})`,
                         color: theme.text,
                         // ✅ คงค่า Config เดิมของคุณไว้ (1.4 สำหรับ pani, 1.6 สำหรับอื่น ๆ)
-                        lineHeight: font.id === 'font-pani' ? '1.4' : '1.6',
+                        lineHeight: font.id === 'font-pani' || font.id === 'font-fk-amour' ? '1.4' : '1.6',
                     }}
                     onBlur={onBlur}
                 />
