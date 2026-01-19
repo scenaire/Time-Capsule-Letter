@@ -7,12 +7,12 @@ import { Providers } from "@/components/common/Providers";
 // 1. ลงฟอนต์ที่คุณ Nair อัปโหลด (ตรวจสอบชื่อไฟล์ให้ตรงเป๊ะนะคะ)
 
 const fontPani = localFont({
-  src: '../../public/fonts/GivePANINewYear2026-Regular.ttf',
+  src: './fonts/GivePANINewYear2026-Regular.ttf',
   variable: '--font-pani',
 })
 
 const fontADELIA = localFont({
-  src: '../../public/fonts/ADELIA.otf',
+  src: './fonts/ADELIA.otf',
   variable: '--font-adelia',
 })
 
@@ -29,12 +29,12 @@ const fontAnuphan = Anuphan({
 });
 
 const fontGoogleSans = localFont({
-  src: '../../public/fonts/GoogleSans-VariableFont_wght.ttf',
+  src: './fonts/GoogleSans-VariableFont_wght.ttf',
   variable: '--font-google-sans',
 })
 
 const fontFkAmour = localFont({
-  src: '../../public/fonts/FKAmourRegular.ttf',
+  src: './fonts/FKAmourRegular.ttf',
   variable: '--font-fk-amour',
   declarations: [
     { prop: 'ascent-override', value: '100%' },   // ลดเพดานลงมา (จากปกติ ~100%)

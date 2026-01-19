@@ -41,6 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 # fonts
+/src/app/fonts
 /public/fonts
 
+# vercel
 .vercel
