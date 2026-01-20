@@ -226,7 +226,9 @@ export default function TimeCapsulePage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className={`text-center font-ibm-plex text-xl opacity-60 ${currentTheme.text}`}
+            // ✅ แก้ตรงนี้: เช็ค isDark -> ถ้าจริงใช้สีขาว, ถ้าเท็จใช้สีดำเข้ม (#2d2d2d)
+            className={`text-center font-adelia select-none text-3xl opacity-60 ${currentTheme.isDark ? 'text-[#fffdf0]' : 'text-[#1f1512]'
+              }`}
           >
             Sealing your memory...
           </motion.div>

@@ -10,6 +10,5 @@ export const config = {
     matcher: [
         "/write",
         "/archived",
-        "/overlay"
     ],
 };

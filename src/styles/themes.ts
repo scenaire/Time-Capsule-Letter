@@ -7,7 +7,7 @@ export const THEMES = [
         placeholder: 'placeholder:text-carbon-fiber/40',
         pageBg: 'bg-cloud-milk',
         isDark: false,
-        ball: { muted: '#d1d5db', vivid: '#374151' }
+        ball: { muted: '#d1d5db', vivid: '#374151' },
     },
 
     // 🎭 contrast start — dreamy → dark

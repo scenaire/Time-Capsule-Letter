@@ -84,7 +84,7 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
             <div className="px-6 md:px-14 pt-8 md:pt-12 pb-2 mb-2 border-b-2 border-none border-current opacity-70 relative z-20 shrink-0"
                 style={{ color: theme.text }}
             >
-                <h2 className={`font-bold text-center text-[10px] md:text-xs tracking-widest uppercase mb-1 opacity-70 ${font.senderText}`}
+                <h2 className={`font-bold text-center text-[10px] md:text-xs tracking-widest uppercase mb-1 select-none opacity-70 ${font.senderText}`}
                     style={{ fontFamily: `var(--${font.id})` }}
                 >
                     To the One I Haven’t Met Yet.
@@ -171,7 +171,7 @@ export const LetterEditor: React.FC<LetterEditorProps> = ({
             <div className="px-6 md:px-14 pb-8 md:pb-12 pt-4 flex flex-col items-end shrink-0 relative z-20"
                 style={{ color: theme.text }}
             >
-                <span className={`font-bold text-[10px] md:text-xs tracking-widest uppercase opacity-80 mb-1 ${font.senderText}`}
+                <span className={`font-bold text-[10px] md:text-xs tracking-widest uppercase select-none opacity-80 mb-1 ${font.senderText}`}
                     style={{ fontFamily: `var(--${font.id})` }}
                 >
                     A Letter From…
