@@ -16,6 +16,11 @@ const fontADELIA = localFont({
   variable: '--font-adelia',
 })
 
+const fontStrawMilky = localFont({
+  src: '../../public/fonts/StrawMilky.otf',
+  variable: '--font-straw-milky',
+})
+
 const fontIbmPlex = IBM_Plex_Sans_Thai({
   subsets: ["thai", "latin"],
   weight: ["400", "700"],
@@ -62,6 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ${fontIbmPlex.variable}
         ${fontGoogleSans.variable}
         ${fontFkAmour.variable}
+        ${fontStrawMilky.variable}
         antialiased
       `}>
         <Providers>{children}</Providers>

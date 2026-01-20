@@ -20,6 +20,7 @@
     "@tiptap/pm": "^3.15.3",
     "@tiptap/react": "^3.15.3",
     "@tiptap/starter-kit": "^3.15.3",
+    "date-fns": "^4.1.0",
     "framer-motion": "^12.26.2",
     "lucide-react": "^0.562.0",
     "matter-js": "^0.20.0",

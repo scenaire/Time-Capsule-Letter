@@ -99,7 +99,7 @@ export default function TimeCapsulePage() {
   // Loading View
   if (isLoading) {
     return (
-      <div className={`min-h-screen w-full flex items-center justify-center ${currentTheme.bg} ${currentTheme.text}`}>
+      <div className={`min-h-screen w-full flex items-center justify-center font-adelia ${currentTheme.bg} ${currentTheme.text}`}>
         <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }}>
           Loading memories...
         </motion.div>
