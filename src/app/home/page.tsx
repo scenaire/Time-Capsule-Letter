@@ -4,16 +4,17 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-// ✅ 1. Import useSession
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
+import { LogOut } from "lucide-react";
 
 // Components
-import { MiniEnvelope } from '@/components/home/MiniEnvelope';
+import InteractiveBackground from '@/components/home/InteractiveBackground';
 import { HeroEnvelope } from '@/components/home/HeroEnvelope';
 import { ENVELOPES } from '@/constants/assets';
 import { FONTS } from '@/styles/fonts';
 import { THEMES } from '@/styles/themes';
 
+// Interface
 interface LetterData {
     id: string;
     user_id: string;
@@ -26,54 +27,75 @@ interface LetterData {
     created_at: string;
 }
 
-const generatePosition = () => {
-    let x, y;
-    do {
-        x = Math.random() * 90 + 5;
-        y = Math.random() * 80 + 10;
-    } while (x > 30 && x < 70 && y > 20 && y < 80);
-    return { x, y };
-};
+// 🎨 1. สร้าง Decoration Icons (SVG Shapes)
+// 🎨 1. แก้ไข Decoration Icons (เพิ่มจำนวนเป็น 15 ชิ้น)
+const DECORATIONS = [
+    // --- โซนบนซ้าย ---
+    { id: 1, d: "M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z", color: "#FFD700", size: 24, top: "15%", left: "10%", delay: 0 },
+    { id: 2, d: "M6 6L18 18M6 18L18 6", color: "#e2e8f0", size: 20, top: "8%", left: "25%", delay: 3, fill: "none", stroke: true },
+    { id: 3, d: "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z", color: "#FF9090", size: 16, top: "25%", left: "5%", delay: 1.2, fill: "none", stroke: true },
+
+    // --- โซนบนขวา ---
+    { id: 4, d: "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z", color: "#90b3d9", size: 22, top: "20%", left: "85%", delay: 1.5, fill: "none", stroke: true },
+    { id: 5, d: "M12 4L4 20H20L12 4Z", color: "#9bc49b", size: 18, top: "12%", left: "70%", delay: 0.5, fill: "none", stroke: true },
+    { id: 6, d: "M6 6L18 18M6 18L18 6", color: "#FFD700", size: 14, top: "28%", left: "92%", delay: 4, fill: "none", stroke: true },
+
+    // --- โซนกลาง (หลบตรงกลาง) ---
+    { id: 7, d: "M4 12c2-6 10-6 12 0s10 6 12 0", color: "#e2e8f0", size: 28, top: "45%", left: "8%", delay: 2, fill: "none", stroke: true },
+    { id: 8, d: "M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z", color: "#FF9090", size: 18, top: "55%", left: "88%", delay: 0.8 },
+
+    // --- โซนล่างซ้าย ---
+    { id: 9, d: "M4 12c2-6 10-6 12 0s10 6 12 0", color: "#90b3d9", size: 32, top: "80%", left: "15%", delay: 2.5, fill: "none", stroke: true },
+    { id: 10, d: "M12 4L4 20H20L12 4Z", color: "#e2e8f0", size: 20, top: "88%", left: "25%", delay: 1.8, fill: "none", stroke: true },
+    { id: 11, d: "M6 6L18 18M6 18L18 6", color: "#9bc49b", size: 24, top: "72%", left: "5%", delay: 3.5, fill: "none", stroke: true },
+
+    // --- โซนล่างขวา ---
+    { id: 12, d: "M12 4L4 20H20L12 4Z", color: "#FFD700", size: 20, top: "75%", left: "80%", delay: 0.5, fill: "none", stroke: true },
+    { id: 13, d: "M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z", color: "#90b3d9", size: 16, top: "90%", left: "60%", delay: 4.2 },
+    { id: 14, d: "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z", color: "#FF9090", size: 24, top: "85%", left: "90%", delay: 1.0, fill: "none", stroke: true },
+    { id: 15, d: "M4 12c2-6 10-6 12 0s10 6 12 0", color: "#9bc49b", size: 26, top: "65%", left: "92%", delay: 2.8, fill: "none", stroke: true },
+];
 
 export default function HomePage() {
     const router = useRouter();
-    // ✅ 2. เรียกใช้ Hook useSession
     const { data: session, status } = useSession();
 
     const [loading, setLoading] = useState(true);
     const [myLetter, setMyLetter] = useState<any>(null);
-    const [companions, setCompanions] = useState<any[]>([]);
+    const [companionEnvelopes, setCompanionEnvelopes] = useState<string[]>([]);
     const [timeLeft, setTimeLeft] = useState("");
+    // ✅ เพิ่ม state สำหรับ Doodles เพื่อแก้ปัญหา Hydration Mismatch (Render ฝั่ง Client เท่านั้น)
+    const [showDecorations, setShowDecorations] = useState(false);
 
     const deadline = new Date('2026-02-10T00:00:00');
     const now = new Date();
     const canEdit = now < deadline;
 
     useEffect(() => {
-        // ✅ 3. เช็ค status ของ Session ก่อน
-        if (status === "loading") return; // รอก่อน
+        // ให้ Doodles แสดงหลังจาก Mount แล้วเท่านั้น
+        setShowDecorations(true);
+
+        if (status === "loading") return;
 
         if (status === "unauthenticated" || !session?.user) {
-            router.push('/'); // ถ้าไม่มี session ดีดออก
+            router.push('/');
             return;
         }
 
         const fetchHomeData = async () => {
             try {
-                // ✅ 4. ใช้ ID จาก Session (NextAuth) แทน Supabase Auth
                 const userId = (session.user as any).id;
 
-                // --- (Logic ดึงข้อมูลเหมือนเดิม) ---
+                // 1. Fetch My Letter
                 const { data, error } = await supabase
                     .from('letters')
                     .select('*')
-                    .eq('user_id', userId) // ใช้ userId จาก NextAuth
+                    .eq('user_id', userId)
                     .single();
 
                 const myLetterData = data as unknown as LetterData;
 
                 if (error || !myLetterData) {
-                    console.log("No letter found for user:", userId);
                     router.push('/write');
                     return;
                 }
@@ -94,29 +116,15 @@ export default function HomePage() {
                     sealId: myLetterData.seal_id || 'leaf'
                 });
 
-                // Fetch Companions (คนอื่นที่ไม่ใช่เรา)
+                // 2. Fetch Companions
                 const { data: othersData } = await supabase
                     .from('letters')
-                    .select('id, envelope_id, sender_nickname')
-                    .neq('user_id', userId) // ใช้ userId จาก NextAuth
-                    .limit(30);
+                    .select('envelope_id')
+                    .neq('user_id', userId)
+                    .limit(20);
 
                 if (othersData) {
-                    const mappedCompanions = othersData.map((letter: any, index: number) => {
-                        const pos = generatePosition();
-                        const envObj = ENVELOPES.find(e => e.id === letter.envelope_id) || ENVELOPES[0];
-
-                        return {
-                            id: index,
-                            x: pos.x,
-                            y: pos.y,
-                            rotation: Math.random() * 40 - 20,
-                            color: envObj.env,
-                            sender: letter.sender_nickname,
-                            delay: Math.random() * 2
-                        };
-                    });
-                    setCompanions(mappedCompanions);
+                    setCompanionEnvelopes(othersData.map((l: any) => l.envelope_id));
                 }
 
             } catch (error) {
@@ -145,13 +153,13 @@ export default function HomePage() {
         const interval = setInterval(updateTimer, 60000);
         return () => clearInterval(interval);
 
-    }, [session, status, router]); // ✅ เพิ่ม dependency
+    }, [session, status, router]);
 
 
     if (loading || status === "loading") {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#2d2d2d] text-white">
-                <div className="animate-pulse font-adelia">Loading Memories...</div>
+            <div className="min-h-screen flex items-center justify-center bg-[#fdfbf7] text-[#2d2d2d]">
+                <div className="animate-pulse font-adelia text-2xl">Loading Playground...</div>
             </div>
         );
     }
@@ -161,7 +169,40 @@ export default function HomePage() {
     return (
         <main className="relative min-h-screen w-full overflow-hidden flex flex-col items-center justify-center p-6 bg-[#fdfbf7] text-[#2d2d2d]">
 
-            {/* 🎨 2. เพิ่มลายจุด (Dot Pattern) เหมือนหน้า Archived */}
+            {/* Agent Profile Bar */}
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="absolute top-6 right-6 z-50"
+            >
+                <div className="flex items-center gap-3 bg-[#e2e8f0]/80 backdrop-blur-md py-1.5 pl-5 pr-2 rounded-full shadow-sm border border-white/50">
+                    <div className="flex flex-col items-end mr-1">
+                        <span className="text-[10px] font-black text-slate-500 tracking-widest uppercase leading-tight font-ibm-plex">
+                            AGENT
+                        </span>
+                        <span className="text-sm font-bold text-[#8b5cf6] leading-none font-ibm-plex">
+                            {session?.user?.name || "Unknown"}
+                        </span>
+                    </div>
+                    <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                        {session?.user?.image ? (
+                            <img src={session.user.image} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full bg-slate-300 flex items-center justify-center text-xs text-slate-500">?</div>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="p-2 ml-1 text-rose-500 hover:bg-white rounded-full transition-all shadow-sm hover:shadow-md group"
+                        title="Logout"
+                    >
+                        <LogOut size={18} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
+                    </button>
+                </div>
+            </motion.div>
+
+            {/* 🎨 Dot Pattern Background */}
             <div
                 className="absolute inset-0 pointer-events-none opacity-[0.4]"
                 style={{
@@ -170,38 +211,77 @@ export default function HomePage() {
                 }}
             />
 
-            <div className="absolute inset-0 pointer-events-none">
-                {companions.map((c) => (
-                    <MiniEnvelope key={c.id} {...c} />
-                ))}
-            </div>
-
-            <div className="absolute inset-0 bg-radial-gradient from-transparent to-[#1a1a1a]/80 pointer-events-none z-0" />
-
-            <div className="relative z-10 w-full max-w-md md:max-w-lg px-4 flex flex-col items-center gap-8">
-                <div className="text-center space-y-2">
-                    <h1 className="font-adelia text-4xl md:text-6xl drop-shadow-lg select-none">
-                        See you in <br />
-                        <span className="relative inline-block text-[#ff4d4d] font-ibm-plex">
-                            2027
-                            <svg className="absolute w-full h-3 -bottom-1 left-0 text-[#2d2d2d] pointer-events-none" viewBox="0 0 200 9" fill="none" preserveAspectRatio="none">
-                                <path d="M2.00025 7.00002C55.0315 1.70183 133.029 -1.61129 198.001 3.50002" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+            {/* ✅ 2. Doodles Decoration Layer */}
+            {showDecorations && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    {DECORATIONS.map((item) => (
+                        <motion.div
+                            key={item.id}
+                            className="absolute"
+                            style={{ top: item.top, left: item.left }}
+                            initial={{ opacity: 0, scale: 0 }}
+                            animate={{
+                                opacity: 0.6,
+                                scale: 1,
+                                y: [0, -15, 0], // ลอยขึ้นลง
+                                rotate: [0, 10, -10, 0] // หมุนไปมา
+                            }}
+                            transition={{
+                                opacity: { duration: 1, delay: item.delay },
+                                scale: { duration: 1, delay: item.delay },
+                                y: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: item.delay },
+                                rotate: { duration: 6, repeat: Infinity, ease: "easeInOut", delay: item.delay }
+                            }}
+                        >
+                            <svg
+                                width={item.size}
+                                height={item.size}
+                                viewBox="0 0 24 24"
+                                fill={item.fill || "currentColor"}
+                                stroke={item.stroke ? item.color : "none"}
+                                strokeWidth={item.stroke ? 2 : 0}
+                                style={{ color: item.color }}
+                            >
+                                <path d={item.d} strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
-                        </span>
+                        </motion.div>
+                    ))}
+                </div>
+            )}
+
+            {/* 🌌 Interactive Physics Background (Z-0) */}
+            <InteractiveBackground otherEnvelopes={companionEnvelopes} />
+
+            {/* 👑 Foreground Layer (Hero) (Z-10) */}
+            <div className="relative z-10 w-full max-w-md md:max-w-lg px-4 flex flex-col items-center gap-6 pointer-events-none">
+
+                {/* Header */}
+                <div className="text-center space-y-2 select-none pointer-events-auto">
+                    <h1 className="font-adelia text-4xl md:text-5xl drop-shadow-sm text-[#2d2d2d]">
+                        See you in <span className="text-[#ff4d4d] font-straw-milky">2027</span>
                     </h1>
 
-                    <p className="font-ibm-plex text-sm tracking-widest uppercase bg-[#2d2d2d]/10 text-[#2d2d2d]/60 px-4 py-1 rounded-full backdrop-blur-sm inline-block mt-6 select-none">
-                        Unlocking in: {timeLeft}
-                    </p>
+                    {/* Tag Countdown */}
+                    <div className="inline-flex items-center gap-2 bg-white border border-[#2d2d2d]/10 px-4 py-1.5 rounded-sm shadow-sm rotate-[-2deg]">
+                        <div className="w-2 h-2 rounded-full bg-[#ff4d4d] animate-pulse" />
+                        <p className="font-ibm-plex text-xs tracking-widest uppercase text-[#2d2d2d]/80 font-bold">
+                            Unlocking in: {timeLeft}
+                        </p>
+                    </div>
                 </div>
 
+                {/* The Envelope */}
                 <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 1, ease: "easeOut" }}
-                    className="w-full relative"
+                    // ✅ เพิ่ม drop-shadow-xl เพื่อให้ตัวจดหมายมีเงาคมๆ ลอยออกมา
+                    className="w-full relative pointer-events-auto drop-shadow-xl"
                 >
-                    <div className="absolute inset-0 bg-white/5 rounded-full blur-3xl scale-110 -z-60 animate-pulse" />
+                    {/* ✨ ใส่เป้นอันนี้แทน: "Clean White Spotlight" */}
+                    {/* ใช้สีขาว bg-white/60 + เบลอนิดเดียว พอให้ดูนวลๆ ไม่ฟุ้งจนเลอะ */}
+                    <div className="absolute inset-0 bg-white/40 rounded-full blur-xl scale-110 -z-10" />
+
                     <HeroEnvelope
                         {...myLetter}
                         canEdit={canEdit}
@@ -209,18 +289,27 @@ export default function HomePage() {
                     />
                 </motion.div>
 
+                {/* Deadline Warning */}
                 {canEdit && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 2 }}
-                        className="font-ibm-plex text-xs text-center max-w-xs opacity-40"
+                        className="font-ibm-plex text-xs text-center max-w-xs text-[#2d2d2d]/40 pointer-events-auto bg-white/50 backdrop-blur-sm px-4 py-2 rounded-lg"
                     >
-                        * You can edit this letter until Feb 10, 2026. <br />
-                        After that, it will be sealed until Jan 1, 2027.
+                        * You can edit this letter until Feb 10, 2026.
                     </motion.div>
                 )}
+
             </div>
+
+            <style jsx global>{`
+                @keyframes pulse-slow {
+                    0%, 100% { opacity: 0.3; transform: scale(1.1); }
+                    50% { opacity: 0.6; transform: scale(1.3); }
+                }
+                .animate-pulse-slow { animation: pulse-slow 10s ease-in-out infinite; }
+            `}</style>
         </main>
     );
 }

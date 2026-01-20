@@ -24,11 +24,39 @@ import { LetterEditor } from '@/components/letter/LetterEditor';
 import { ControlPanel } from '@/components/letter/ControlPanel';
 import { SubmissionError } from '@/components/feedback/SubmissionError';
 
+// Database
+import { useSession } from "next-auth/react";
+import { supabase } from '@/lib/supabase';
+
 export default function TimeCapsulePage() {
   const router = useRouter();
 
+  const { data: session } = useSession();
+
   // 1. Data & Animation Logic (รวมร่างใน Hook เดียวแล้ว)
   const { state, actions, derived } = useLetterLogic();
+  const [hasSavedLetter, setHasSavedLetter] = useState(false);
+
+  useEffect(() => {
+    const checkExistingLetter = async () => {
+      if (session?.user) {
+        const userId = (session.user as any).id;
+
+        // ถาม DB ว่า: "User คนนี้ มีจดหมายในตาราง letters บ้างไหม?"
+        const { count } = await supabase
+          .from('letters')
+          .select('*', { count: 'exact', head: true }) // head: true คือโหลดแค่เช็คจำนวน ไม่โหลดเนื้อหา (เร็วมาก)
+          .eq('user_id', userId);
+
+        // ถ้า count > 0 แปลว่ามีจดหมายอยู่แล้ว -> โชว์ปุ่ม Home ได้
+        if (count && count > 0) {
+          setHasSavedLetter(true);
+        }
+      }
+    };
+
+    checkExistingLetter();
+  }, [session]); // รันเมื่อ session เปลี่ยน (login สำเร็จ)
 
   const {
     postcard, isFolding, foldStep, readyToSeal, selectedSeal,
@@ -39,6 +67,7 @@ export default function TimeCapsulePage() {
 
   // UI Local State
   const [isTyping, setIsTyping] = useState(false);
+  const [hasSelection, setHasSelection] = useState(false);
 
   // ✨ 2. Setup Tiptap Editor
   const editor = useEditor({
@@ -71,6 +100,11 @@ export default function TimeCapsulePage() {
     onUpdate: ({ editor }) => {
       actions.updatePostcard('message', editor.getHTML());
     },
+    onSelectionUpdate: ({ editor }) => {
+      setHasSelection(!editor.state.selection.empty);
+    },
+    onFocus: () => setIsTyping(true),
+    onBlur: () => setIsTyping(false),
   });
 
   // ✨ Sync DB Content to Editor (เมื่อโหลดเสร็จ หรือเปลี่ยน Draft)
@@ -216,8 +250,6 @@ export default function TimeCapsulePage() {
               font={currentFont}
               isFolding={isFolding}
               onUpdatePostcard={actions.updatePostcard}
-              onFocus={() => setIsTyping(true)}
-              onBlur={() => setIsTyping(false)}
             />
 
           </motion.div>
@@ -239,7 +271,7 @@ export default function TimeCapsulePage() {
       {!isSent && !isFolding && (
         <div
           className={`absolute bottom-4 left-0 right-0 z-50 flex justify-center transition-all duration-300
-                        ${isTyping
+                        ${(isTyping || hasSelection) // ✅ เพิ่ม || hasSelection ตรงนี้
               ? 'opacity-0 translate-y-10 pointer-events-none md:opacity-100 md:translate-y-0 md:pointer-events-auto'
               : 'opacity-100 translate-y-0 pointer-events-auto'
             }
@@ -252,6 +284,8 @@ export default function TimeCapsulePage() {
             onCycleFont={actions.cycleFont}
             onCycleTheme={actions.cycleTheme}
             onStartFolding={actions.startFoldingRitual}
+            hasExistingLetter={hasSavedLetter}
+            onGoHome={() => router.push('/home')}
           />
         </div>
       )}

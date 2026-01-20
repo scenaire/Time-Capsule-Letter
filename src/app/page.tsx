@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { supabase } from '@/lib/supabase'; // ✅ 1. Import Supabase
 
 // Components
 import { DotPatternBackground } from '@/components/ui/DotPatternBackground';
@@ -11,28 +12,57 @@ import { HandDrawnUnderline } from '@/components/ui/HandrawnDecorations';
 import { TicketButton } from '@/components/landing/TicketButton';
 
 export default function LandingPage() {
-    const { status } = useSession();
+    const { data: session, status } = useSession();
     const router = useRouter();
+    const [isChecking, setIsChecking] = useState(false); // ✅ 2. State สำหรับรอเช็ค DB
 
-    // 1. Logic: Redirect Strategy
+    // 🚦 3. Logic: Redirect Strategy
     useEffect(() => {
-        if (status === "authenticated") {
-            router.push("/write");
-        }
-    }, [status, router]);
+        const checkUserStatus = async () => {
+            // ถ้ายังไม่ Login หรือกำลังโหลด Session ให้ข้ามไปก่อน
+            if (status !== "authenticated" || !session?.user) return;
 
-    // 2. Loading State (Minimal)
-    if (status === "loading") {
+            setIsChecking(true); // เริ่มเช็ค DB -> เปิดหน้า Loading
+
+            try {
+                const userId = (session.user as any).id;
+
+                // เช็คว่ามีจดหมายของ User นี้ไหม?
+                const { data, error } = await supabase
+                    .from('letters')
+                    .select('id')
+                    .eq('user_id', userId)
+                    .maybeSingle(); // ใช้ maybeSingle เพื่อไม่ให้ Error ถ้าไม่เจอ
+
+                if (data) {
+                    // ✅ Case A: มีจดหมายแล้ว -> ไป Home
+                    router.replace("/home");
+                } else {
+                    // 📝 Case B: ยังไม่มีจดหมาย -> ไป Write
+                    router.replace("/write");
+                }
+            } catch (err) {
+                console.error("Check status failed:", err);
+                // ถ้า Error กันเหนียวให้ไปหน้า Write ก่อน
+                router.replace("/write");
+            }
+        };
+
+        checkUserStatus();
+    }, [status, session, router]);
+
+    // ⏳ 4. Loading State (แสดงตอนกำลังโหลด Session หรือกำลังเช็ค DB)
+    if (status === "loading" || isChecking) {
         return (
             <div className="h-screen w-full bg-[#fdfbf7] flex items-center justify-center">
                 <div className="font-adelia text-2xl text-[#2d2d2d] animate-pulse opacity-50">
-                    Loading...
+                    Checking Ticket...
                 </div>
             </div>
         );
     }
 
-    // 3. Render
+    // 5. Render (สำหรับคนยังไม่ Login)
     return (
         <DotPatternBackground className="flex flex-col items-center justify-center p-6 bg-[#fdfbf7] text-[#2d2d2d]">
 
@@ -60,7 +90,8 @@ export default function LandingPage() {
                 </p>
 
                 {/* --- Action Button --- */}
-                <TicketButton onClick={() => signIn("twitch", { callbackUrl: "/write" })} />
+                {/* ปุ่ม Login: เมื่อกดจะเริ่ม Flow การล็อกอิน */}
+                <TicketButton onClick={() => signIn("twitch")} />
 
                 <p className="mt-6 text-sm text-[#2d2d2d]/40 font-ibm-plex">
                     *Requires Twitch account to secure your letter
