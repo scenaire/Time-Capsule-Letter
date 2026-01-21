@@ -26,8 +26,16 @@ export async function getLetter() {
 export async function getCompanionEnvelopes() {
     const session = await getServerSession(authOptions);
     const userId = (session?.user as any)?.id;
-    let query = supabaseAdmin.from('letters').select('envelope_id').limit(50).order('created_at', { ascending: false });
+
+    // ✅ แก้ตรงนี้: เพิ่ม sender_nickname กับ theme_name เข้าไป
+    let query = supabaseAdmin
+        .from('letters')
+        .select('envelope_id, sender_nickname, theme_name')
+        .limit(50)
+        .order('created_at', { ascending: false });
+
     if (userId) query = query.neq('user_id', userId);
+
     const { data, error } = await query;
     return { data, error };
 }

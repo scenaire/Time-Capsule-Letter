@@ -62,7 +62,7 @@ export default function HomePage() {
 
     const [loading, setLoading] = useState(true);
     const [myLetter, setMyLetter] = useState<any>(null);
-    const [companionEnvelopes, setCompanionEnvelopes] = useState<string[]>([]);
+    const [companionData, setCompanionData] = useState<any[]>([]);
     const [timeLeft, setTimeLeft] = useState("");
     // ✅ เพิ่ม state สำหรับ Doodles เพื่อแก้ปัญหา Hydration Mismatch (Render ฝั่ง Client เท่านั้น)
     const [showDecorations, setShowDecorations] = useState(false);
@@ -113,7 +113,7 @@ export default function HomePage() {
                 const { data: othersData } = await getCompanionEnvelopes();
 
                 if (othersData) {
-                    setCompanionEnvelopes(othersData.map((l: any) => l.envelope_id));
+                    setCompanionData(othersData);
                 }
 
             } catch (error) {
@@ -239,7 +239,7 @@ export default function HomePage() {
             )}
 
             {/* 🌌 Interactive Physics Background (Z-0) */}
-            <InteractiveBackground otherEnvelopes={companionEnvelopes} />
+            <InteractiveBackground envelopeData={companionData} />
 
             {/* 👑 Foreground Layer (Hero) (Z-10) */}
             <div className="relative z-10 w-full max-w-md md:max-w-lg px-4 flex flex-col items-center gap-6 pointer-events-none">

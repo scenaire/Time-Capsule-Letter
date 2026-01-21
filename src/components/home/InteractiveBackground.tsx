@@ -3,20 +3,31 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { CUTE_COLOR_MAP } from '@/constants/assets';
+import { THEMES } from '@/styles/themes';
 
 // ⚙️ Physics Config
 const BALL_RADIUS = 30; // ขนาดบอล
 const HERO_WIDTH = 320; // ความกว้างโดยประมาณของ Hero Envelope
 const HERO_HEIGHT = 420; // ความสูงโดยประมาณ
 
+interface BallState {
+    id: number;
+    color: string;
+    x: number;
+    y: number;
+    angle: number;
+    sender: string;       // เพิ่มชื่อคนส่ง
+    theme: typeof THEMES[0]; // เพิ่มข้อมูลธีม
+}
+
 export default function InteractiveBackground({
-    otherEnvelopes = [] // รายชื่อสีซองจดหมายคนอื่น (เช่น ['pink', 'mint'])
+    envelopeData = [] // รายชื่อสีซองจดหมายคนอื่น (เช่น ['pink', 'mint'])
 }: {
-    otherEnvelopes: string[];
+    envelopeData: any[];
 }) {
     const sceneRef = useRef<HTMLDivElement>(null);
     const engineRef = useRef<Matter.Engine | null>(null);
-    const [balls, setBalls] = useState<{ id: number; color: string; x: number; y: number; angle: number }[]>([]);
+    const [balls, setBalls] = useState<BallState[]>([]);
 
     useEffect(() => {
         if (!sceneRef.current) return;
@@ -50,7 +61,7 @@ export default function InteractiveBackground({
 
 
         // 4. Create Balls (เพื่อนๆ)
-        const ballBodies = otherEnvelopes.map(() => {
+        const ballBodies = envelopeData.map((envelope: any) => {
             // สุ่มตำแหน่งเกิด (ให้ห่างจากตรงกลาง)
             let x, y;
             do {
@@ -117,13 +128,22 @@ export default function InteractiveBackground({
         // 7. Sync Physics to React State (Update Position for Rendering)
         // เราใช้ Events.on 'afterUpdate' เพื่อดึงค่า x,y มาวาด div เอง (จะได้ใส่ CSS สวยๆ ได้)
         const updateLoop = () => {
-            const newBalls = ballBodies.map((body, index) => ({
-                id: body.id,
-                color: CUTE_COLOR_MAP[otherEnvelopes[index]] || '#e2e8f0', // Map สี
-                x: body.position.x,
-                y: body.position.y,
-                angle: body.angle
-            }));
+            const newBalls = ballBodies.map((body, index) => {
+                // ✅ ดึงข้อมูลของคนนี้ออกมา
+                const data = envelopeData[index];
+                // ✅ หา Theme Object จากชื่อ theme_name (ถ้าหาไม่เจอใช้ค่าแรก)
+                const matchedTheme = THEMES.find(t => t.name === data.theme_name) || THEMES[0];
+
+                return {
+                    id: body.id,
+                    color: CUTE_COLOR_MAP[data.envelope_id] || '#e2e8f0',
+                    x: body.position.x,
+                    y: body.position.y,
+                    angle: body.angle,
+                    sender: data.sender_nickname || 'Anonymous', // ✅ ใส่ชื่อ
+                    theme: matchedTheme // ✅ ใส่ธีม
+                };
+            });
             setBalls(newBalls);
         };
 
@@ -138,14 +158,14 @@ export default function InteractiveBackground({
             Events.off(mouseConstraint, 'mouseup');
             Events.off(mouseConstraint, 'enddrag');
         };
-    }, [otherEnvelopes]);
+    }, [envelopeData]);
 
     return (
         <div ref={sceneRef} className="absolute inset-0 w-full h-full overflow-hidden pointer-events-auto">
             {balls.map((ball) => (
                 <div
                     key={ball.id}
-                    className="absolute w-[60px] h-[60px] rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-shadow"
+                    className="group absolute w-[60px] h-[60px] rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-shadow"
                     style={{
                         transform: `translate3d(${ball.x - BALL_RADIUS}px, ${ball.y - BALL_RADIUS}px, 0) rotate(${ball.angle}rad)`,
                         width: BALL_RADIUS * 2,
@@ -166,6 +186,22 @@ export default function InteractiveBackground({
                             boxShadow: `inset 0 0 10px rgba(255,255,255,0.4)`
                         }}
                     />
+
+                    <div
+                        className={`
+                            absolute -top-10 left-1/2 -translate-x-1/2 
+                            px-3 py-1.5 rounded-lg shadow-lg 
+                            opacity-0 group-hover:opacity-100 transition-opacity duration-200 
+                            pointer-events-none whitespace-nowrap z-50
+                            text-xs font-bold font-ibm-plex border border-black/10 select-none
+                            ${ball.theme.bg} ${ball.theme.text} 
+                        `}
+                    >
+                        {ball.sender}
+                        {/* สามเหลี่ยมชี้ลงเล็กๆ */}
+                        <div className={`absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-current ${ball.theme.text} opacity-20`} />
+                    </div>
+
                 </div>
             ))}
         </div>
