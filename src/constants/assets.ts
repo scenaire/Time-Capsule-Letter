@@ -3,7 +3,8 @@ export const SEALS = [
     { id: 'leaf', src: '/images/seals/seal-leaf.png', name: 'Autumn Leaf' },
     { id: 'sakura', src: '/images/seals/seal-sakura.png', name: 'Spring Sakura' },
     { id: 'blue', src: '/images/seals/seal-blue.png', name: 'Ocean Blue' },
-    // เพิ่มลายอื่นๆ ต่อที่นี่ได้เลย
+    { id: 'heart', src: '/images/seals/seal-heart.png', name: 'Violet Heart' },
+    { id: 'white', src: '/images/seals/seal-white.png', name: 'White Rosemary' },
 ];
 
 export const ENVELOPES = [

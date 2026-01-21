@@ -22,6 +22,7 @@ export default function MailboxOverlay() {
     const ballDomRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const [totalCount, setTotalCount] = useState(0);
     const spawnedIds = useRef(new Set<string>());
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const playSound = () => {
         const audio = new Audio('/sounds/crystal_drop.mp3');
@@ -35,14 +36,39 @@ export default function MailboxOverlay() {
         const engine = Engine.create();
         engineRef.current = engine;
 
+        engine.gravity.y = 1.5;
+
         const width = 400, height = 500, wallThick = 60;
+        const wallHeight = 2000;
         const wallOptions = { isStatic: true, render: { visible: false } };
 
         World.add(engine.world, [
+            // 1. พื้น (Bottom)
             Bodies.rectangle(width / 2, height + 20, width, wallThick, wallOptions),
-            Bodies.rectangle(0, height / 2, wallThick, height, wallOptions),
-            Bodies.rectangle(width, height / 2, wallThick, height, wallOptions)
+
+            // 2. เพดาน (Top) - อยู่สูงที่ -1000
+            Bodies.rectangle(width / 2, -1000, width, wallThick, wallOptions),
+
+            // 3. กำแพงซ้าย (Left) - ยืดความสูงเป็น 2000 และดันตำแหน่งขึ้นไปข้างบน
+            // คำนวณ Y: ให้จุดกึ่งกลางของกำแพงลอยขึ้นไป เพื่อให้ปลายล่างแตะพื้น และปลายบนชนเพดาน
+            Bodies.rectangle(0, height - (wallHeight / 2), wallThick, wallHeight, wallOptions),
+
+            // 4. กำแพงขวา (Right) - เหมือนด้านซ้าย
+            Bodies.rectangle(width, height - (wallHeight / 2), wallThick, wallHeight, wallOptions)
         ]);
+
+        const Mouse = Matter.Mouse, MouseConstraint = Matter.MouseConstraint;
+        if (containerRef.current) {
+            const mouse = Mouse.create(containerRef.current);
+            const mouseConstraint = MouseConstraint.create(engine, {
+                mouse: mouse,
+                constraint: {
+                    stiffness: 0.2,
+                    render: { visible: false }
+                }
+            });
+            World.add(engine.world, mouseConstraint);
+        }
 
         Events.on(engine, 'afterUpdate', () => {
             engine.world.bodies.forEach((body) => {
@@ -142,11 +168,9 @@ export default function MailboxOverlay() {
     }, []);
 
     return (
-        // ... (JSX ส่วน Render เหมือนเดิมเป๊ะ ไม่ต้องแก้) ...
-        // Copy JSX จากโค้ดก่อนหน้ามาวางตรงนี้ได้เลยค่ะ 
-        // (ส่วน div, styles, balls.map เหมือนเดิมทุกประการ)
+
         <div className="flex flex-col items-center gap-8 p-10">
-            <div className="relative w-[400px] h-[500px]">
+            <div ref={containerRef} className="relative w-[400px] h-[500px]">
                 <div className="absolute inset-0 z-10 pointer-events-none rounded-[40px] border-[2px] border-white/30 overflow-hidden shadow-lg">
                     <div className="absolute inset-0 opacity-20 animate-noise-sparkle"
                         style={{
