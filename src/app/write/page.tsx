@@ -23,10 +23,11 @@ import { EnvelopeContainer } from '@/components/envelope/EnvelopeContainer';
 import { LetterEditor } from '@/components/letter/LetterEditor';
 import { ControlPanel } from '@/components/letter/ControlPanel';
 import { SubmissionError } from '@/components/feedback/SubmissionError';
+import MAGIC_PROMPTS from '@/constants/magic_prompts.json';
 
 // Database
 import { useSession } from "next-auth/react";
-import { supabase } from '@/lib/supabase';
+import { checkExistingLetter } from '@/app/actions/letterActions';
 
 export default function TimeCapsulePage() {
   const router = useRouter();
@@ -37,26 +38,33 @@ export default function TimeCapsulePage() {
   const { state, actions, derived } = useLetterLogic();
   const [hasSavedLetter, setHasSavedLetter] = useState(false);
 
+  //prompt
+  const [currentPrompt, setCurrentPrompt] = useState<string | null>(null);
+
+  // 2. Logic การสุ่มคำถาม
+  const handleMagicPrompt = () => {
+    // รวมคำถามจากทุก Categories เป็น Array เดียว
+    const allPrompts = MAGIC_PROMPTS.categories.flatMap(c => c.prompts);
+
+    // สุ่มคำถามใหม่ที่ไม่ซ้ำกับอันเดิม (เพื่อประสบการณ์ที่ดีขึ้น)
+    let newPrompt;
+    do {
+      newPrompt = allPrompts[Math.floor(Math.random() * allPrompts.length)];
+    } while (newPrompt === currentPrompt && allPrompts.length > 1);
+
+    setCurrentPrompt(newPrompt);
+  };
+
   useEffect(() => {
-    const checkExistingLetter = async () => {
+    const checkExisting = async () => {
       if (session?.user) {
-        const userId = (session.user as any).id;
-
-        // ถาม DB ว่า: "User คนนี้ มีจดหมายในตาราง letters บ้างไหม?"
-        const { count } = await supabase
-          .from('letters')
-          .select('*', { count: 'exact', head: true }) // head: true คือโหลดแค่เช็คจำนวน ไม่โหลดเนื้อหา (เร็วมาก)
-          .eq('user_id', userId);
-
-        // ถ้า count > 0 แปลว่ามีจดหมายอยู่แล้ว -> โชว์ปุ่ม Home ได้
-        if (count && count > 0) {
-          setHasSavedLetter(true);
-        }
+        // เรียกใช้ได้แล้ว ไม่แดงแล้วค่ะ
+        const hasLetter = await checkExistingLetter();
+        if (hasLetter) setHasSavedLetter(true);
       }
     };
-
-    checkExistingLetter();
-  }, [session]); // รันเมื่อ session เปลี่ยน (login สำเร็จ)
+    checkExisting();
+  }, [session]);
 
   const {
     postcard, isFolding, foldStep, readyToSeal, selectedSeal,
@@ -269,25 +277,44 @@ export default function TimeCapsulePage() {
 
       {/* Control Panel */}
       {!isSent && !isFolding && (
-        <div
-          className={`absolute bottom-4 left-0 right-0 z-50 flex justify-center transition-all duration-300
-                        ${(isTyping || hasSelection) // ✅ เพิ่ม || hasSelection ตรงนี้
-              ? 'opacity-0 translate-y-10 pointer-events-none md:opacity-100 md:translate-y-0 md:pointer-events-auto'
-              : 'opacity-100 translate-y-0 pointer-events-auto'
-            }
-                    `}
-        >
-          <ControlPanel
-            theme={currentTheme}
-            font={currentFont}
-            isMessageEmpty={!editor || editor.isEmpty}
-            onCycleFont={actions.cycleFont}
-            onCycleTheme={actions.cycleTheme}
-            onStartFolding={actions.startFoldingRitual}
-            hasExistingLetter={hasSavedLetter}
-            onGoHome={() => router.push('/home')}
-          />
-        </div>
+        <>
+          {/* แผ่นใสสำหรับปิด Magic Prompt */}
+          {/* ตอนนี้มันอยู่นอก div ที่มี transform แล้ว มันจะขยายเต็มจอได้จริงค่ะ */}
+          {currentPrompt && (
+            <div
+              className="fixed inset-0 z-[45] bg-transparent cursor-default"
+              onClick={() => setCurrentPrompt(null)}
+            />
+          )}
+
+          {/* ตัว Control Panel Container */}
+          <div
+            className={`absolute bottom-4 left-0 right-0 z-50 flex justify-center transition-all duration-300
+                            ${(isTyping || hasSelection)
+                ? 'opacity-0 translate-y-10 pointer-events-none md:opacity-100 md:translate-y-0 md:pointer-events-auto'
+                : 'opacity-100 translate-y-0 pointer-events-auto'
+              }
+                        `}
+          >
+            <ControlPanel
+              theme={currentTheme}
+              font={currentFont}
+              isMessageEmpty={!editor || editor.isEmpty}
+              onCycleFont={actions.cycleFont}
+              onCycleTheme={actions.cycleTheme}
+              onStartFolding={actions.startFoldingRitual}
+              hasExistingLetter={hasSavedLetter}
+              onGoHome={() => router.push('/home')}
+              currentPrompt={currentPrompt}
+              onClosePrompt={() => setCurrentPrompt(null)}
+              onMagicPrompt={handleMagicPrompt}
+              onFocus={() => {
+                setIsTyping(true);
+                setCurrentPrompt(null);
+              }}
+            />
+          </div>
+        </>
       )}
     </main>
   );

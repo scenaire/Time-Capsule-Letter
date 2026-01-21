@@ -7,45 +7,33 @@ import { useRouter } from "next/navigation";
 import { Home } from "lucide-react";
 import { useSession } from "next-auth/react";
 import SuccessMailbox from '@/components/mailbox/SuccessMailbox';
-import { supabase } from '@/lib/supabase'; // ✅ Import Supabase
+import { getCompanionEnvelopes } from '@/app/actions/letterActions';
 
 export function ArchivedContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session } = useSession();
     const envelopeId = searchParams.get('envelope') || 'white';
-
-
-    // ✅ State สำหรับเก็บรายชื่อซองจดหมายทั้งหมด
     const [crowdEnvelopes, setCrowdEnvelopes] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchLetters = async () => {
-            const userId = (session?.user as any)?.id;
+            try {
+                // 🚀 เรียกผ่าน Server Action (Logic กรอง User ID อยู่หลังบ้านแล้ว)
+                const { data } = await getCompanionEnvelopes();
 
-            // สร้าง Query พื้นฐาน
-            let query = supabase
-                .from('letters')
-                .select('envelope_id, user_id') // ดึง user_id มาเช็คด้วยก็ได้ (แต่ใช้ filter เลยง่ายกว่า)
-                .order('created_at', { ascending: false })
-                .limit(50);
-
-            // ✅ กรอง: ถ้ามี User ID ให้ตัดจดหมายของตัวเองออก (ไม่เอามาโชว์ซ้ำ)
-            if (userId) {
-                query = query.neq('user_id', userId);
-            }
-
-            const { data } = await query;
-
-            if (data) {
-                // เก็บแค่ชื่อ envelope_id
-                setCrowdEnvelopes((data as any[]).map((l: any) => l.envelope_id));
+                if (data) {
+                    // เก็บแค่ชื่อ envelope_id
+                    setCrowdEnvelopes((data as any[]).map((l: any) => l.envelope_id));
+                }
+            } catch (error) {
+                console.error("Failed to fetch crowd envelopes:", error);
             }
         };
 
-        // เรียก fetch เมื่อ session พร้อม (หรือเปลี่ยน)
+        // เรียก fetch
         fetchLetters();
-    }, [session]); // ✅ เพิ่ม dependency เป็น session
+    }, []);
 
     return (
         <main className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden p-6 bg-[#fdfbf7] text-[#2d2d2d]">
@@ -85,7 +73,7 @@ export function ArchivedContent() {
 
                 {/* 3. 🏺 The Hero Section: Success Mailbox */}
                 <div className="relative mb-10 scale-90 md:scale-100">
-                    {/* ✅ ส่ง crowdEnvelopes ไปให้ Mailbox */}
+                    {/* ส่ง crowdEnvelopes ไปให้ Mailbox */}
                     <SuccessMailbox
                         userEnvelopeId={envelopeId}
                         otherEnvelopes={crowdEnvelopes}

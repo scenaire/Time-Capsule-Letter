@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { supabase } from '@/lib/supabase';
 import { ENVELOPE_OVERLAY_MAP } from '@/constants/assets';
+import { getPublicOverlayData } from '@/app/actions/letterActions';
 
 const BALL_RADIUS = 33;
 const BALL_PADDING = 4;
@@ -11,7 +12,7 @@ const PHYSICS_RADIUS = BALL_RADIUS + BALL_PADDING;
 
 type Ball = {
     id: number;       // Matter Body ID
-    letterId: string; // ✅ Supabase Letter ID (เอาไว้หาตัวตนตอน Edit)
+    letterId: string; // Supabase Letter ID (เอาไว้หาตัวตนตอน Edit)
     color: string;
 };
 
@@ -61,11 +62,11 @@ export default function MailboxOverlay() {
         };
     }, []);
 
-    // ✅ รับ letterId มาด้วย
     const spawnBall = (letterId: string, envelopeId: string, isNew: boolean = true) => {
         if (!engineRef.current) return;
 
         const color = ENVELOPE_OVERLAY_MAP[envelopeId] || '#FFFFFF';
+        // สุ่มตำแหน่ง X (ให้กระจายๆ) และ Y (ถ้าใหม่ให้หล่นจากฟ้า)
         const startX = Math.random() * 200 + 100;
         const startY = isNew ? -50 : Math.random() * 300 + 100;
 
@@ -75,7 +76,6 @@ export default function MailboxOverlay() {
 
         Matter.World.add(engineRef.current.world, body);
 
-        // ✅ Save letterId to State
         setBalls(prev => [...prev, { id: body.id, letterId, color }]);
 
         if (isNew) {
@@ -85,70 +85,56 @@ export default function MailboxOverlay() {
     };
 
     useEffect(() => {
-        // A. Load All (ต้องดึง id มาด้วย)
+        // A. Load Initial Data (ผ่าน Server Action แทน Supabase Client)
         const fetchExisting = async () => {
-            const { data } = await supabase
-                .from('letters')
-                // ✅ ดึง user_id หรือ id (primary key) มาใช้เป็น letterId
-                .select('user_id, envelope_id');
-
-            if (data) {
-                setTotalCount(data.length);
-                data.forEach((letter: any) => {
-                    // ใช้ user_id เป็น ID ประจำตัวบอล (เพราะ 1 คนส่งได้ 1 ฉบับ)
-                    spawnBall(letter.user_id, letter.envelope_id, false);
-                });
+            try {
+                const { data } = await getPublicOverlayData();
+                if (data) {
+                    setTotalCount(data.length);
+                    data.forEach((letter: any) => {
+                        spawnBall(letter.user_id, letter.envelope_id, false);
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to load overlay data:", err);
             }
         };
 
         fetchExisting();
 
-        // B. Real-time Listener (INSERT & UPDATE)
+        // B. Real-time Listener (เปลี่ยนมาฟัง Broadcast)
         const channel = supabase
-            .channel('mailbox-overlay')
+            .channel('mailbox-overlay') // ชื่อ Channel ต้องตรงกับที่ Server ส่งมา
             .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'letters' }, // ✅ ฟังทุก event
+                'broadcast',
+                { event: 'letter-update' }, // ฟัง Event นี้
                 (payload) => {
-                    console.log("📨 Received Payload:", payload);
-                    const eventType = payload.eventType;
-                    const newLetter = payload.new as any;
+                    console.log("📨 Broadcast Received:", payload);
 
-                    // ใช้ user_id เป็น key ในการอ้างอิง
-                    const targetId = newLetter.user_id;
+                    const { user_id, envelope_id } = payload.payload;
+                    const newColor = ENVELOPE_OVERLAY_MAP[envelope_id] || '#FFFFFF';
 
-                    if (eventType === 'INSERT') {
-                        // 📥 จดหมายใหม่ -> ปล่อยบอล
-                        console.log("New Letter! 💌");
-                        setTimeout(() => {
-                            spawnBall(targetId, newLetter.envelope_id, true);
-                        }, 500);
-                    }
-                    else if (eventType === 'UPDATE') {
-                        // 🎨 แก้ไข -> เปลี่ยนสีบอลเดิม
-                        console.log("Update Color! 🎨");
-                        const newColor = ENVELOPE_OVERLAY_MAP[newLetter.envelope_id] || '#FFFFFF';
+                    // เช็คว่ามีบอลของคนนี้หรือยัง?
+                    setBalls(prevBalls => {
+                        const existingBall = prevBalls.find(b => b.letterId === user_id);
 
-                        setBalls(prevBalls => prevBalls.map(ball => {
-                            if (ball.letterId === targetId) {
-                                return { ...ball, color: newColor }; // เปลี่ยนแค่สี
-                            }
-                            return ball;
-                        }));
-                    }
+                        if (existingBall) {
+                            // 🎨 ถ้ามีแล้ว -> แค่เปลี่ยนสี (Update)
+                            console.log("Update Existing Ball Color");
+                            return prevBalls.map(ball =>
+                                ball.letterId === user_id ? { ...ball, color: newColor } : ball
+                            );
+                        } else {
+                            // 📥 ถ้ายังไม่มี -> ปล่อยบอลใหม่ (Insert)
+                            // ต้องเรียกนอก setState เพราะ spawnBall มี side effect กับ Matter.js
+                            setTimeout(() => spawnBall(user_id, envelope_id, true), 0);
+                            return prevBalls;
+                        }
+                    });
                 }
             )
-            .subscribe((status, err) => {
-                // 🔥 นี่คือจุดสำคัญ! ให้มันรายงานสถานะการเชื่อมต่อ
-                console.log(`🔌 Realtime Status: ${status}`, err);
-
-                if (status === 'SUBSCRIBED') {
-                    console.log("✅ Connected! Ready to listen.");
-                } else if (status === 'CHANNEL_ERROR') {
-                    console.error("❌ Connection Failed:", err);
-                } else if (status === 'TIMED_OUT') {
-                    console.warn("⏳ Connection Timed out...");
-                }
+            .subscribe((status) => {
+                console.log(`🔌 Overlay Status: ${status}`);
             });
 
         return () => { supabase.removeChannel(channel); };

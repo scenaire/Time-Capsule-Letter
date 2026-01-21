@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { supabase } from '@/lib/supabase';
+// ❌ ลบ import supabase ออก
+// import { supabase } from '@/lib/supabase'; 
+// ✅ เพิ่ม import Server Actions
+import { getLetter, saveLetter } from '@/app/actions/letterActions';
+
 import { FONTS } from '@/styles/fonts';
 import { THEMES } from '@/styles/themes';
 import { ENVELOPES } from '@/constants/assets';
@@ -37,14 +41,14 @@ export const useLetterLogic = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isError, setIsError] = useState(false);
 
-    // ✨ Conflict State: เอาไว้เก็บข้อมูลตีกัน (Local vs DB)
+    // ✨ Conflict State
     const [conflictData, setConflictData] = useState<PostcardState | null>(null);
     const [isConflict, setIsConflict] = useState(false);
 
     const userId = (session?.user as any)?.id;
     const draftKey = userId ? `draft_${userId}` : null;
 
-    // Auto-Save: หยุดเซฟถ้ากำลังตีกัน (isConflict) หรือส่งแล้ว
+    // Auto-Save
     const { loadDraft, clearDraft } = useAutoSave(draftKey, postcard, !isSent && !isConflict && !isLoading);
 
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -56,7 +60,7 @@ export const useLetterLogic = () => {
     const currentFont = FONTS[postcard.fontIdx];
     const currentEnvelope = ENVELOPES[postcard.envelopeIdx];
 
-    // ... (Helpers เหมือนเดิม)
+    // ... (Helpers)
     const checkScroll = () => {
         if (scrollRef.current) {
             const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
@@ -85,24 +89,23 @@ export const useLetterLogic = () => {
 
     const resetError = () => setIsError(false);
 
-    // ✨ ฟังก์ชันเลือกข้อมูล (เมื่อเกิด Conflict)
     const resolveConflict = (useLocal: boolean) => {
         if (useLocal && conflictData) {
-            setPostcard(conflictData); // ใช้ของ Local
+            setPostcard(conflictData);
         } else {
-            clearDraft(); // ใช้ของ DB -> ลบ Local ทิ้งเลย
+            clearDraft();
         }
         setConflictData(null);
         setIsConflict(false);
     };
 
+    // ✅ ฟังก์ชัน Save (ใช้ Server Action)
     const handleApplySeal = async (sealId: string) => {
         if (!userId) return;
         setIsError(false);
         setSelectedSeal(sealId);
 
         const letterData = {
-            user_id: userId,
             message: postcard.message,
             sender_nickname: postcard.sender,
             theme_name: currentTheme.name,
@@ -115,8 +118,8 @@ export const useLetterLogic = () => {
         };
 
         try {
-            const { error } = await supabase.from('letters').upsert(letterData as any, { onConflict: 'user_id' });
-            if (error) throw error;
+            // 🚀 เรียก Server Action แทน supabase.from(...).upsert(...)
+            await saveLetter(letterData);
 
             console.log('Sealed!');
             clearDraft();
@@ -128,7 +131,7 @@ export const useLetterLogic = () => {
         }
     };
 
-    // Load Data Logic (Updated) 🧠
+    // ✅ Load Data Logic (ใช้ Server Action)
     useEffect(() => {
         if (status === "loading" || !userId || hasInitialized.current) return;
 
@@ -136,18 +139,17 @@ export const useLetterLogic = () => {
             setIsLoading(true);
             try {
                 const localData = loadDraft(); // 1. ดึง Local
-                const { data: dbDataRaw } = await supabase // 2. ดึง DB
-                    .from('letters')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .maybeSingle();
+
+                // 🚀 2. ดึง DB ผ่าน Server Action (แทน supabase.from(...).select(...))
+                const { data: dbDataRaw, error } = await getLetter();
+
+                if (error) throw error;
 
                 const dbData = dbDataRaw as any;
 
                 let parsedDBData: PostcardState | null = null;
 
                 if (dbData) {
-                    // แปลง DB Data เป็น Format State
                     const fontIdx = FONTS.findIndex(f => f.id === dbData.font_id);
                     const themeIdx = THEMES.findIndex(t => t.name === dbData.theme_name);
                     const envelopeIdx = ENVELOPES.findIndex(e => e.id === dbData.envelope_id);
@@ -161,24 +163,21 @@ export const useLetterLogic = () => {
                     };
                 }
 
-                // ✨ 3. Logic ตัดสินใจ
+                // ✨ 3. Logic ตัดสินใจ (เหมือนเดิม)
                 if (localData && parsedDBData) {
-                    // กรณี: มีทั้งคู่ -> เช็คว่าเนื้อหาต่างกันไหม?
                     if (JSON.stringify(localData) !== JSON.stringify(parsedDBData)) {
-                        // ต่างกัน! -> แจ้ง Conflict
-                        setPostcard(parsedDBData); // โชว์ของ DB เป็นพื้นหลังไปก่อน
-                        setConflictData(localData); // เก็บของ Local ไว้รอ User เลือก
+                        setPostcard(parsedDBData);
+                        setConflictData(localData);
                         setIsConflict(true);
                     } else {
-                        // เหมือนกันเป๊ะ -> ใช้ DB เลย
                         setPostcard(parsedDBData);
                     }
                 } else if (localData) {
-                    setPostcard(localData); // มีแค่ Local
+                    setPostcard(localData);
                 } else if (parsedDBData) {
-                    setPostcard(parsedDBData); // มีแค่ DB
+                    setPostcard(parsedDBData);
                 } else {
-                    setPostcard(prev => ({ ...prev, sender: session?.user?.name || '' })); // ใหม่กิ๊ก
+                    setPostcard(prev => ({ ...prev, sender: session?.user?.name || '' }));
                 }
 
             } catch (err) {
@@ -192,7 +191,7 @@ export const useLetterLogic = () => {
         initData();
     }, [session, status, loadDraft, userId]);
 
-    // Scroll sync (เหมือนเดิม)
+    // Scroll sync
     useEffect(() => {
         if (textareaRef.current && scrollRef.current) {
             textareaRef.current.style.height = 'auto';
@@ -214,7 +213,7 @@ export const useLetterLogic = () => {
             handleApplySeal,
             handleScroll: checkScroll,
             resetError,
-            resolveConflict // ✅ ส่งตัวนี้ออกไปใช้
+            resolveConflict
         },
         refs: { scrollRef, textareaRef },
         derived: { currentTheme, currentFont, currentEnvelope }

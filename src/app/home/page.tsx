@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { getLetter, getCompanionEnvelopes } from '@/app/actions/letterActions';
 import { useSession, signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
 
@@ -72,7 +72,6 @@ export default function HomePage() {
     const canEdit = now < deadline;
 
     useEffect(() => {
-        // ให้ Doodles แสดงหลังจาก Mount แล้วเท่านั้น
         setShowDecorations(true);
 
         if (status === "loading") return;
@@ -84,14 +83,8 @@ export default function HomePage() {
 
         const fetchHomeData = async () => {
             try {
-                const userId = (session.user as any).id;
-
-                // 1. Fetch My Letter
-                const { data, error } = await supabase
-                    .from('letters')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .single();
+                // 🚀 1. Fetch My Letter ผ่าน Server Action
+                const { data, error } = await getLetter();
 
                 const myLetterData = data as unknown as LetterData;
 
@@ -100,7 +93,7 @@ export default function HomePage() {
                     return;
                 }
 
-                // Map Data
+                // Map Data (เหมือนเดิม)
                 const matchedEnvelope = ENVELOPES.find(e => e.id === myLetterData.envelope_id) || ENVELOPES[0];
                 const matchedTheme = THEMES.find(t => t.name === myLetterData.theme_name) || THEMES[0];
                 const matchedFont = FONTS.find(f => f.id === myLetterData.font_id) || FONTS[0];
@@ -116,12 +109,8 @@ export default function HomePage() {
                     sealId: myLetterData.seal_id || 'leaf'
                 });
 
-                // 2. Fetch Companions
-                const { data: othersData } = await supabase
-                    .from('letters')
-                    .select('envelope_id')
-                    .neq('user_id', userId)
-                    .limit(20);
+                // 🚀 2. Fetch Companions ผ่าน Server Action
+                const { data: othersData } = await getCompanionEnvelopes();
 
                 if (othersData) {
                     setCompanionEnvelopes(othersData.map((l: any) => l.envelope_id));
@@ -136,7 +125,7 @@ export default function HomePage() {
 
         fetchHomeData();
 
-        // Timer Logic
+        // Timer Logic (เหมือนเดิม)
         const targetDate = new Date('2027-01-01T00:00:00');
         const updateTimer = () => {
             const now = new Date();
