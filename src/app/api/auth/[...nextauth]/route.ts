@@ -1,6 +1,8 @@
 import NextAuth, { AuthOptions } from "next-auth";
 import TwitchProvider from "next-auth/providers/twitch";
-import { supabase } from "@/lib/supabase"; // ✅ Import Supabase Client ที่เราสร้างไว้
+// ❌ ลบอันเก่า: import { supabase } from "@/lib/supabase";
+// ✅ ใช้อันใหม่: Import Admin Client (ที่มี Service Role Key)
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 // สร้างตัวแปร authOptions แยกออกมา (เผื่อเอาไปใช้ใน Server Component อื่นๆ)
 export const authOptions: AuthOptions = {
@@ -9,34 +11,37 @@ export const authOptions: AuthOptions = {
             clientId: process.env.TWITCH_CLIENT_ID!,
             clientSecret: process.env.TWITCH_CLIENT_SECRET!,
         }),
+        // ⚠️ หมายเหตุ: ถ้าคุณแนร์จะใช้ Google Login ด้วย อย่าลืมเพิ่ม GoogleProvider ตรงนี้นะคะ
+        // GoogleProvider({ ... }) 
     ],
     callbacks: {
-        // 🔐 1. SignIn Callback: ทำงานทันทีที่ล็อกอินผ่าน Twitch สำเร็จ
+        // 🔐 1. SignIn Callback: ทำงานทันทีที่ล็อกอินสำเร็จ
         async signIn({ user, account, profile }) {
-            // เช็คว่าเป็น Twitch จริงไหม
-            if (account?.provider === "twitch" && profile) {
-                const twitchProfile = profile as any; // Cast เป็น any เพื่อดึง field เฉพาะของ Twitch (sub, preferred_username)
+            // เช็คว่าเป็น Twitch จริงไหม (ถ้ามี Google ก็เพิ่ม || account?.provider === "google")
+            if (account && profile) {
 
                 // เตรียมข้อมูล User
+                // หมายเหตุ: แต่ละ Provider อาจเก็บ ID ไว้ต่างที่กัน (Twitch ใช้ sub)
+                const providerId = (profile as any).sub || user.id;
+
                 const userData = {
-                    id: twitchProfile.sub, // ใช้ Twitch ID เป็น Primary Key (สำคัญมาก!)
-                    username: twitchProfile.preferred_username || user.name, // ชื่อ ID (เช่น nair_vtuber)
-                    display_name: user.name, // ชื่อที่โชว์ (เช่น Nair Channel)
+                    id: providerId, // ใช้ Provider ID เป็น Primary Key
+                    username: (profile as any).preferred_username || user.name, // Twitch ใช้ preferred_username
+                    display_name: user.name,
                     image: user.image,
                     email: user.email,
                     // created_at ปล่อยให้ DB จัดการเอง
                 };
 
-                // 🔥 Upsert: ยิงใส่ Supabase (ถ้ามีแล้ว = อัปเดต, ถ้ายังไม่มี = สร้างใหม่)
-                const { error } = await supabase
+                // 🔥 Upsert: ยิงใส่ Supabase โดยใช้ 'supabaseAdmin' (ทะลุ RLS ได้แน่นอน)
+                const { error } = await supabaseAdmin
                     .from('users')
                     .upsert(userData as any, { onConflict: 'id' });
 
                 if (error) {
                     console.error("❌ Error syncing user to Supabase:", error);
-                    // หมายเหตุ: เรา return true เพื่อยอมให้ล็อกอินผ่านไปก่อน แม้จะเซฟลง DB ไม่สำเร็จ
-                    // (แต่จริงๆ ควรเช็คดีๆ เพราะถ้าไม่ลง DB จะส่งจดหมายไม่ได้)
-                    return true;
+                    // ถ้าเซฟ User ไม่ลง DB -> เราควร Block การล็อกอินไปเลย เพราะเดี๋ยวจะส่งจดหมายไม่ได้
+                    return false;
                 }
 
                 console.log("✅ User synced to DB:", userData.username);
@@ -57,7 +62,7 @@ export const authOptions: AuthOptions = {
         async jwt({ token, account, profile }) {
             // ทำงานครั้งแรกตอน Sign In
             if (account && profile) {
-                token.sub = (profile as any).sub; // บันทึก Twitch ID ลง Token
+                token.sub = (profile as any).sub || token.sub; // บันทึก ID ลง Token
             }
             return token;
         },

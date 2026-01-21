@@ -21,6 +21,7 @@ export default function MailboxOverlay() {
     const [balls, setBalls] = useState<Ball[]>([]);
     const ballDomRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const [totalCount, setTotalCount] = useState(0);
+    const spawnedIds = useRef(new Set<string>());
 
     const playSound = () => {
         const audio = new Audio('/sounds/crystal_drop.mp3');
@@ -65,8 +66,13 @@ export default function MailboxOverlay() {
     const spawnBall = (letterId: string, envelopeId: string, isNew: boolean = true) => {
         if (!engineRef.current) return;
 
+        // ถ้ามีชื่อในสมุดแล้ว ห้ามปล่อยซ้ำเด็ดขาด! (กันเหนียวอีกชั้น)
+        if (spawnedIds.current.has(letterId)) return;
+
+        // จดชื่อลงสมุดทันที
+        spawnedIds.current.add(letterId);
+
         const color = ENVELOPE_OVERLAY_MAP[envelopeId] || '#FFFFFF';
-        // สุ่มตำแหน่ง X (ให้กระจายๆ) และ Y (ถ้าใหม่ให้หล่นจากฟ้า)
         const startX = Math.random() * 200 + 100;
         const startY = isNew ? -50 : Math.random() * 300 + 100;
 
@@ -104,33 +110,28 @@ export default function MailboxOverlay() {
 
         // B. Real-time Listener (เปลี่ยนมาฟัง Broadcast)
         const channel = supabase
-            .channel('mailbox-overlay') // ชื่อ Channel ต้องตรงกับที่ Server ส่งมา
+            .channel('mailbox-overlay')
             .on(
                 'broadcast',
-                { event: 'letter-update' }, // ฟัง Event นี้
+                { event: 'letter-update' },
                 (payload) => {
                     console.log("📨 Broadcast Received:", payload);
 
                     const { user_id, envelope_id } = payload.payload;
                     const newColor = ENVELOPE_OVERLAY_MAP[envelope_id] || '#FFFFFF';
 
-                    // เช็คว่ามีบอลของคนนี้หรือยัง?
-                    setBalls(prevBalls => {
-                        const existingBall = prevBalls.find(b => b.letterId === user_id);
-
-                        if (existingBall) {
-                            // 🎨 ถ้ามีแล้ว -> แค่เปลี่ยนสี (Update)
-                            console.log("Update Existing Ball Color");
-                            return prevBalls.map(ball =>
-                                ball.letterId === user_id ? { ...ball, color: newColor } : ball
-                            );
-                        } else {
-                            // 📥 ถ้ายังไม่มี -> ปล่อยบอลใหม่ (Insert)
-                            // ต้องเรียกนอก setState เพราะ spawnBall มี side effect กับ Matter.js
-                            setTimeout(() => spawnBall(user_id, envelope_id, true), 0);
-                            return prevBalls;
-                        }
-                    });
+                    // เช็คจากสมุด (Ref) แทน State -> เร็วและแม่นยำกว่า
+                    if (spawnedIds.current.has(user_id)) {
+                        console.log("Update Existing Ball Color");
+                        // ถ้ามีแล้ว แค่อัปเดตสี
+                        setBalls(prevBalls => prevBalls.map(ball =>
+                            ball.letterId === user_id ? { ...ball, color: newColor } : ball
+                        ));
+                    } else {
+                        console.log("New Ball Incoming!");
+                        // ถ้ายังไม่มี สั่งปล่อยบอลเลย (spawnBall จะจัดการจดชื่อให้เอง)
+                        spawnBall(user_id, envelope_id, true);
+                    }
                 }
             )
             .subscribe((status) => {
